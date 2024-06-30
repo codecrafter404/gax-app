@@ -68,7 +68,7 @@ class DeviceInformation {
   factory DeviceInformation.fromEssentials(
       String mac, String serviceUUID, String pubKey, String name) {
     return DeviceInformation(
-      deviceConnected: true,
+      deviceConnected: false,
       deviceName: name,
       mac: mac,
       pubKey: pubKey,

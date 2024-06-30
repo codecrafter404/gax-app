@@ -1,4 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:gax_app/utils/BLEUtil.dart';
+import 'package:gax_app/utils/ErrorUtils.dart';
 import 'package:gax_app/widgets/DeviceLogs.dart';
 import 'package:gax_app/widgets/DeviceStatusWidget.dart';
 
@@ -13,19 +18,41 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   DeviceInformation deviceStatus = DeviceInformation.fromEssentials(
-      "DE:AD:BE:EF:00:01",
+      "3C:61:05:30:B3:CE",
       "5f9b34fb-0000-1000-8000-00805f9b34fb",
       "privateKey",
-      "GA-X");
-  Future<void> updateDeviceStatus() async {
-    setState(() {
-      deviceStatus.deviceConnected = !deviceStatus.deviceConnected;
-    });
+      "GAX 0.1");
+  BluetoothDevice? bleDevice;
+  StreamSubscription<BluetoothConnectionState>? deviceStatusChangedStream;
+
+  Future<void> updateDeviceStatus(BuildContext context) async {
+    try {
+      if (bleDevice == null || bleDevice!.isDisconnected) {
+        bleDevice = await scanAndConnect(10, deviceStatus);
+        deviceStatusChangedStream =
+            bleDevice!.connectionState.listen((x) async {
+          setState(() {
+            deviceStatus.deviceConnected =
+                x == BluetoothConnectionState.connected;
+          });
+        });
+      }
+    } catch (e) {
+      print(e.toString());
+      if (context.mounted)
+        displayErrorMessage(context, "🔌failed to connect", e.toString());
+    }
   }
 
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    deviceStatusChangedStream?.cancel();
+    super.dispose();
   }
 
   @override
@@ -36,7 +63,9 @@ class _HomePageState extends State<HomePage> {
         title: Text(widget.title),
       ),
       body: RefreshIndicator(
-        onRefresh: updateDeviceStatus,
+        onRefresh: () async {
+          updateDeviceStatus(context);
+        },
         child: Stack(
           // Workaround to allow refreshing without an ListView()
           children: [
@@ -75,7 +104,9 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: updateDeviceStatus,
+        onPressed: () async {
+          updateDeviceStatus(context);
+        },
         tooltip: 'Increment',
         label: const Text("Open"),
         icon: const Icon(Icons.lock_open_rounded),

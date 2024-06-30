@@ -26,7 +26,7 @@ class DeviceLogs extends StatelessWidget {
         ? ListView(
             children: logs.map((a) => buildListTile(a)).toList(),
           )
-        : Center(
+        : const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -41,7 +41,7 @@ class DeviceLogs extends StatelessWidget {
     return ListTile(
       title: Text(entry.time.toIso8601String()),
       subtitle: Text(entry.mac.toUpperCase()),
-      leading: CircleAvatar(
+      leading: const CircleAvatar(
         child: Icon(Icons.check_sharp),
       ),
     );

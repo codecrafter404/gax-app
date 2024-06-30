@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:gax_app/widgets/DeviceStatusWidget.dart';
 
@@ -17,7 +16,7 @@ Future<BluetoothDevice> scanAndConnect(
     devicesStream = FlutterBluePlus.onScanResults.listen((devices) async {
       if (devices.isNotEmpty) {
         device = devices.firstWhere((x) {
-          debugPrint(x.toString());
+          print(x.toString());
           return x.advertisementData.serviceUuids
                   .contains(Guid.fromString(deviceInfo.serviceUUID)) &&
               x.advertisementData.advName == deviceInfo.deviceName &&
@@ -31,11 +30,20 @@ Future<BluetoothDevice> scanAndConnect(
       timeout: Duration(seconds: timeoutAfter),
     );
 
+    DateTime timeout = DateTime.now().add(Duration(seconds: timeoutAfter));
+    while (DateTime.now().compareTo(timeout) < 0) {
+      if (device != null) break;
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
     if (device == null) {
       throw TimeoutException("Failed to find device in given Timeframe");
     }
 
     device!.device.connect(timeout: Duration(seconds: timeoutAfter));
+    // await device!.device.connectionState.firstWhere((x) {
+    //   return BluetoothConnectionState.connected == x;
+    // });
     return device!.device;
   } catch (e) {
     rethrow;
