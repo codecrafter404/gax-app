@@ -10,7 +10,6 @@ List<int> signChallenge(List<int> challenge, String privKey) {
     List<int> private_key = base64.decode(privKey).toList();
     PrivateKey key = PrivateKey.fromBytes(ec, private_key);
     List<int> challenge_hash = sha256.convert(challenge).bytes;
-    print("hash: ${sha256.convert(challenge).toString()}");
     Signature sig = deterministicSign(key, challenge_hash);
     List<int> res = challenge;
     res.addAll(sig.toDER());

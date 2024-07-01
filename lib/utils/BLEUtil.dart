@@ -14,9 +14,9 @@ Future<BluetoothDevice> scanAndConnect(
       await FlutterBluePlus.turnOn();
     }
     devicesStream = FlutterBluePlus.onScanResults.listen((devices) async {
+      print(devices.toString());
       if (devices.isNotEmpty) {
         device = devices.firstWhere((x) {
-          print(x.toString());
           return x.advertisementData.serviceUuids
                   .contains(Guid.fromString(deviceInfo.serviceUUID)) &&
               x.advertisementData.advName == deviceInfo.deviceName &&
@@ -41,6 +41,15 @@ Future<BluetoothDevice> scanAndConnect(
     }
 
     device!.device.connect(timeout: Duration(seconds: timeoutAfter));
+    // wait for the connection to establish successfully
+
+    DateTime connectTimeout =
+        DateTime.now().add(Duration(seconds: timeoutAfter));
+
+    while (DateTime.now().compareTo(connectTimeout) < 0) {
+      if (device!.device.isConnected) break;
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
     // await device!.device.connectionState.firstWhere((x) {
     //   return BluetoothConnectionState.connected == x;
     // });

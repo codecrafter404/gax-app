@@ -7,6 +7,7 @@ import 'package:gax_app/utils/ChallengeUtils.dart';
 import 'package:gax_app/utils/ErrorUtils.dart';
 import 'package:gax_app/widgets/DeviceLogs.dart';
 import 'package:gax_app/widgets/DeviceStatusWidget.dart';
+import 'package:local_auth/local_auth.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
@@ -28,6 +29,8 @@ class _HomePageState extends State<HomePage> {
 
   Future<bool> initBLEDevice(BuildContext context) async {
     try {
+      if (!(await FlutterBluePlus.isSupported))
+        throw Exception("Your device doesn't support BLE");
       if (bleDevice == null || bleDevice!.isDisconnected) {
         bleDevice = await scanAndConnect(10, deviceStatus);
         deviceStatusChangedStream =
@@ -47,10 +50,22 @@ class _HomePageState extends State<HomePage> {
     return false;
   }
 
-  Future<void> openDoor(BuildContext context) async {
+  Future<void> openGate(BuildContext context) async {
+    String resultMsg = "Empty result message";
+    bool successful = false;
     try {
       if (!(await initBLEDevice(context))) {
         return;
+      }
+
+      // local auth
+      LocalAuthentication auth = LocalAuthentication();
+      if ((await auth.isDeviceSupported()) || (await auth.canCheckBiometrics)) {
+        bool isAuthenticated = await auth.authenticate(
+            localizedReason: "Please authenticate to open the gate");
+
+        if (!isAuthenticated)
+          throw Exception("You've not authenticated yourself; try again");
       }
 
       List<int> challengeBytes =
@@ -59,10 +74,10 @@ class _HomePageState extends State<HomePage> {
       int result = await writeChallengeBytes(
           10, bleDevice!, solution, deviceStatus.serviceUUID);
 
-      String resultMsg = "the door has been openend (successfully): $result";
+      resultMsg = "the gate has been openend (successfully): $result";
       switch (result) {
         case 0:
-          resultMsg = "the door has been openend successfully: $result";
+          resultMsg = "the gate has been openend successfully: $result";
           break;
         case 1:
           resultMsg = "To short response; see console";
@@ -88,12 +103,20 @@ class _HomePageState extends State<HomePage> {
               "The internal communication between threads didn't work; see console";
           break;
       }
-      displayErrorMessage(context, "[🔓] opened successful", resultMsg);
+      successful = result == 0;
+    } on InvalidBluetoothDeviceStateException catch (e) {
+      resultMsg =
+          "Invalid device state: ${e.msg}; verify the configuration for correctness";
+    } on DeviceNotConnectedException {
+      resultMsg = "The device is currently disconnected; try again";
     } catch (e) {
       print(e.toString());
-      if (context.mounted)
-        displayErrorMessage(context, "[🔒] Failed to open door", e.toString());
+      resultMsg = e.toString();
     }
+    displayErrorMessage(
+        context,
+        successful ? "[🔓] opened successful" : "[🔒] Failed to open gate",
+        resultMsg);
   }
 
   @override
@@ -157,7 +180,7 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          await openDoor(context);
+          await openGate(context);
         },
         tooltip: 'Increment',
         label: const Text("Open"),
