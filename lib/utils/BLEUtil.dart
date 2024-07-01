@@ -58,3 +58,62 @@ bool _compareRemoteIDToMacAddress(DeviceIdentifier remoteId, String mac) {
   }
   return true;
 }
+
+BluetoothCharacteristic getChallengeCharacteristic(BluetoothDevice device) {
+  BluetoothService service;
+  try {
+    service = device.servicesList.firstWhere((x) {
+      return x.serviceUuid ==
+          Guid.fromString("5f9b34fb-0000-1000-8000-00805f9b34fb");
+    });
+  } catch (e) {
+    throw InvalidBluetoothDeviceStateException(msg: "Service not found");
+  }
+
+  BluetoothCharacteristic challengeCharacteristic;
+  try {
+    challengeCharacteristic = service.characteristics.firstWhere((x) {
+      return x.characteristicUuid ==
+          Guid.fromString("00000000-DEAD-BEEF-0001-000000000000");
+    });
+  } catch (e) {
+    throw InvalidBluetoothDeviceStateException(
+        msg: "Challenge characteristic not found");
+  }
+
+  return challengeCharacteristic;
+}
+
+Future<List<int>> readChallengeBytes(
+    int timeoutAfter, BluetoothDevice device) async {
+  if (!device.isConnected) {
+    throw DeviceNotConnectedException();
+  }
+
+  BluetoothCharacteristic challengeCharacteristic =
+      getChallengeCharacteristic(device);
+  List<int> data = await challengeCharacteristic.read(timeout: timeoutAfter);
+  return data;
+}
+
+Future<int> writeChallengeBytes(
+    int timeoutAfter, BluetoothDevice device, List<int> data) async {
+  BluetoothCharacteristic challengeCharacteristic =
+      getChallengeCharacteristic(device);
+  try {
+    await challengeCharacteristic.write(data);
+    return 0;
+  } on FlutterBluePlusException catch (e) {
+    if (!(e.function == "writeCharacteristic" && e.code != null)) {
+      rethrow;
+    }
+    return e.code!;
+  }
+}
+
+class DeviceNotConnectedException implements Exception {}
+
+class InvalidBluetoothDeviceStateException implements Exception {
+  final String msg;
+  InvalidBluetoothDeviceStateException({required this.msg});
+}
