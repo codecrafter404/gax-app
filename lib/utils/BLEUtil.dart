@@ -13,21 +13,30 @@ Future<BluetoothDevice> scanAndConnect(
         Platform.isAndroid) {
       await FlutterBluePlus.turnOn();
     }
-    // first search in `paired` or system devices
+    // first search in system devices
     List<BluetoothDevice> systemdevices = await FlutterBluePlus.systemDevices;
-    try {
-      List<BluetoothDevice> canidates = systemdevices.where((x) {
+    List<BluetoothDevice> canidates = systemdevices.where((x) {
+      return x.platformName == deviceInfo.deviceName &&
+          _compareRemoteIDToMacAddress(x.remoteId, deviceInfo.mac);
+    }).toList();
+    if (canidates.isNotEmpty) {
+      device = canidates[0]; // grab the first one
+    }
+
+    // check bonded devices
+    if (device == null) {
+      // handle bonded devices
+      List<BluetoothDevice> bonded =
+          (await FlutterBluePlus.bondedDevices).where((x) {
         return x.platformName == deviceInfo.deviceName &&
             _compareRemoteIDToMacAddress(x.remoteId, deviceInfo.mac);
       }).toList();
-      print("ble canidates: $canidates, systemdevices = $systemdevices");
-      // this doesn't check, if the service is availble, but its better than nothing
-      if (canidates.isNotEmpty) {
-        device = canidates[0]; // grab the first one
+      if (bonded.isNotEmpty) {
+        device = bonded[0];
       }
-    } catch (_) {
-      // device = null;
     }
+
+    // then scan for all devices
     if (device == null) {
       devicesStream = FlutterBluePlus.onScanResults.listen((devices) async {
         print(devices.toString());

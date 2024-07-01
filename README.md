@@ -1,16 +1,14 @@
-# gax_app
+# [G]ate [A]cces X
+the app for the [firmware](https://github.com/codecrafter404/gax).
 
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+# What is this project about
+I've got an automatic garden gate, which can be triggered using a bulky remote. Since we're moving towards a smartphone controllable world, the gate has to follow. An "normal" Wifi-Controlled solution won't do the job, because no one has wifi around thier gate, right?😅
+# Vison (TODO's)
+- [ ] you scan a QR-Code with all the reqired information
+- [x] you can simply open the gate by the press of a button
+- [ ] alternatively, you can press a button in your QuickAccess-Bar to open the gate
+- [x] in order to prevent spamming, the app will force its users to confirm thier identity when opening the gate, using biometrics or something similar
+- [ ] you can see metadata about the device
+    - [ ] Power-On-Hours
+    - [ ] Access-Log (scince powered on)
+- [ ] Docoumentation📘

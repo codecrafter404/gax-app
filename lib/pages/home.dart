@@ -27,25 +27,29 @@ class _HomePageState extends State<HomePage> {
   BluetoothDevice? bleDevice;
   StreamSubscription<BluetoothConnectionState>? deviceStatusChangedStream;
 
-  Future<bool> initBLEDevice(BuildContext context) async {
+  Future<bool> initBLEDevice(BuildContext? context) async {
     try {
-      if (!(await FlutterBluePlus.isSupported))
+      if (!(await FlutterBluePlus.isSupported)) {
         throw Exception("Your device doesn't support BLE");
+      }
       if (bleDevice == null || bleDevice!.isDisconnected) {
         bleDevice = await scanAndConnect(10, deviceStatus);
         deviceStatusChangedStream =
             bleDevice!.connectionState.listen((x) async {
-          setState(() {
-            deviceStatus.deviceConnected =
-                x == BluetoothConnectionState.connected;
-          });
+          if (context != null && context.mounted) {
+            setState(() {
+              deviceStatus.deviceConnected =
+                  x == BluetoothConnectionState.connected;
+            });
+          }
         });
       }
       return true;
     } catch (e) {
       print(e.toString());
-      if (context.mounted)
+      if (context != null && context.mounted) {
         displayErrorMessage(context, "[🔌] failed to connect", e.toString());
+      }
     }
     return false;
   }
@@ -60,9 +64,7 @@ class _HomePageState extends State<HomePage> {
 
       // local auth
       LocalAuthentication auth = LocalAuthentication();
-      if ((await auth.isDeviceSupported()) || (await auth.canCheckBiometrics)) {
-        print(
-            "${await auth.isDeviceSupported()}, ${await auth.canCheckBiometrics}");
+      if (await auth.isDeviceSupported()) {
         bool isAuthenticated = await auth.authenticate(
           localizedReason: "Please authenticate to open the gate",
           options: const AuthenticationOptions(
@@ -70,8 +72,9 @@ class _HomePageState extends State<HomePage> {
           ),
         );
 
-        if (!isAuthenticated)
+        if (!isAuthenticated) {
           throw Exception("You've not authenticated yourself; try again");
+        }
       }
 
       List<int> challengeBytes =
@@ -119,14 +122,17 @@ class _HomePageState extends State<HomePage> {
       print(e.toString());
       resultMsg = e.toString();
     }
-    displayErrorMessage(
-        context,
-        successful ? "[🔓] opened successful" : "[🔒] Failed to open gate",
-        resultMsg);
+    if (context.mounted) {
+      displayErrorMessage(
+          context,
+          successful ? "[🔓] opened successful" : "[🔒] Failed to open gate",
+          resultMsg);
+    }
   }
 
   @override
   void initState() {
+    initBLEDevice(null);
     super.initState();
   }
 
@@ -143,47 +149,51 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          initBLEDevice(context);
-        },
-        child: Stack(
-          // Workaround to allow refreshing without an ListView()
-          children: [
-            ListView(),
-            Column(
-              children: [
-                Center(
-                  child: Card(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          leading: Icon(deviceStatus.deviceConnected
-                              ? Icons.bluetooth_connected_rounded
-                              : Icons.bluetooth_rounded),
-                          title: Text(deviceStatus.deviceName),
-                          subtitle:
-                              DeviceStatusWidget(deviceStatus: deviceStatus),
-                        )
-                      ],
-                    ),
+      body: FutureBuilder(
+          future: initBLEDevice(context),
+          builder: (BuildContext context, AsyncSnapshot<void> _) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                initBLEDevice(context);
+              },
+              child: Stack(
+                // Workaround to allow refreshing without an ListView()
+                children: [
+                  ListView(),
+                  Column(
+                    children: [
+                      Center(
+                        child: Card(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              ListTile(
+                                leading: Icon(deviceStatus.deviceConnected
+                                    ? Icons.bluetooth_connected_rounded
+                                    : Icons.bluetooth_rounded),
+                                title: Text(deviceStatus.deviceName),
+                                subtitle: DeviceStatusWidget(
+                                    deviceStatus: deviceStatus),
+                              )
+                            ],
+                          ),
+                        ),
+                      ),
+                      // Padding(
+                      //   padding: const EdgeInsets.fromLTRB(17, 0, 17, 0),
+                      //   child: Divider(),
+                      // ),
+                      Expanded(
+                        child: DeviceLogs(
+                          logs: deviceStatus.logEntries,
+                        ),
+                      )
+                    ],
                   ),
-                ),
-                // Padding(
-                //   padding: const EdgeInsets.fromLTRB(17, 0, 17, 0),
-                //   child: Divider(),
-                // ),
-                Expanded(
-                  child: DeviceLogs(
-                    logs: deviceStatus.logEntries,
-                  ),
-                )
-              ],
-            ),
-          ],
-        ),
-      ),
+                ],
+              ),
+            );
+          }),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await openGate(context);
