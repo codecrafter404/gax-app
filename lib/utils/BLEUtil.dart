@@ -59,12 +59,14 @@ bool _compareRemoteIDToMacAddress(DeviceIdentifier remoteId, String mac) {
   return true;
 }
 
-BluetoothCharacteristic getChallengeCharacteristic(BluetoothDevice device) {
+Future<BluetoothCharacteristic> getChallengeCharacteristic(
+    BluetoothDevice device, String bleServiceUuid) async {
   BluetoothService service;
+  await device.discoverServices(timeout: 10);
   try {
+    print(device);
     service = device.servicesList.firstWhere((x) {
-      return x.serviceUuid ==
-          Guid.fromString("5f9b34fb-0000-1000-8000-00805f9b34fb");
+      return x.serviceUuid == Guid.fromString(bleServiceUuid);
     });
   } catch (e) {
     throw InvalidBluetoothDeviceStateException(msg: "Service not found");
@@ -85,21 +87,21 @@ BluetoothCharacteristic getChallengeCharacteristic(BluetoothDevice device) {
 }
 
 Future<List<int>> readChallengeBytes(
-    int timeoutAfter, BluetoothDevice device) async {
+    int timeoutAfter, BluetoothDevice device, String bleServiceUuid) async {
   if (!device.isConnected) {
     throw DeviceNotConnectedException();
   }
 
   BluetoothCharacteristic challengeCharacteristic =
-      getChallengeCharacteristic(device);
+      await getChallengeCharacteristic(device, bleServiceUuid);
   List<int> data = await challengeCharacteristic.read(timeout: timeoutAfter);
   return data;
 }
 
-Future<int> writeChallengeBytes(
-    int timeoutAfter, BluetoothDevice device, List<int> data) async {
+Future<int> writeChallengeBytes(int timeoutAfter, BluetoothDevice device,
+    List<int> data, String bleServiceUuid) async {
   BluetoothCharacteristic challengeCharacteristic =
-      getChallengeCharacteristic(device);
+      await getChallengeCharacteristic(device, bleServiceUuid);
   try {
     await challengeCharacteristic.write(data);
     return 0;
@@ -116,4 +118,8 @@ class DeviceNotConnectedException implements Exception {}
 class InvalidBluetoothDeviceStateException implements Exception {
   final String msg;
   InvalidBluetoothDeviceStateException({required this.msg});
+  @override
+  String toString() {
+    return "InvalidBluetoothDeviceStateException: $msg";
+  }
 }

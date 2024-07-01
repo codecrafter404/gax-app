@@ -54,7 +54,7 @@ class DeviceInformation {
   int powerOnHours;
   String mac;
   String serviceUUID;
-  String pubKey;
+  String privKey;
   List<DeviceLogEntry> logEntries;
 
   DeviceInformation(
@@ -62,7 +62,7 @@ class DeviceInformation {
       required this.deviceConnected,
       required this.powerOnHours,
       required this.mac,
-      required this.pubKey,
+      required this.privKey,
       required this.logEntries,
       required this.serviceUUID});
   factory DeviceInformation.fromEssentials(
@@ -71,7 +71,7 @@ class DeviceInformation {
       deviceConnected: false,
       deviceName: name,
       mac: mac,
-      pubKey: pubKey,
+      privKey: pubKey,
       powerOnHours: -1,
       logEntries: [],
       serviceUUID: serviceUUID,

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:gax_app/utils/BLEUtil.dart';
+import 'package:gax_app/utils/ChallengeUtils.dart';
 import 'package:gax_app/utils/ErrorUtils.dart';
 import 'package:gax_app/widgets/DeviceLogs.dart';
 import 'package:gax_app/widgets/DeviceStatusWidget.dart';
@@ -20,12 +21,12 @@ class _HomePageState extends State<HomePage> {
   DeviceInformation deviceStatus = DeviceInformation.fromEssentials(
       "3C:61:05:30:B3:CE",
       "5f9b34fb-0000-1000-8000-00805f9b34fb",
-      "privateKey",
+      "UP7mKbCTI9wyP/wvOtQCtERckziLTC+gDo83tzAPQ18=", // only for testing purposes
       "GAX 0.1");
   BluetoothDevice? bleDevice;
   StreamSubscription<BluetoothConnectionState>? deviceStatusChangedStream;
 
-  Future<void> updateDeviceStatus(BuildContext context) async {
+  Future<bool> initBLEDevice(BuildContext context) async {
     try {
       if (bleDevice == null || bleDevice!.isDisconnected) {
         bleDevice = await scanAndConnect(10, deviceStatus);
@@ -37,10 +38,61 @@ class _HomePageState extends State<HomePage> {
           });
         });
       }
+      return true;
     } catch (e) {
       print(e.toString());
       if (context.mounted)
-        displayErrorMessage(context, "🔌failed to connect", e.toString());
+        displayErrorMessage(context, "[🔌] failed to connect", e.toString());
+    }
+    return false;
+  }
+
+  Future<void> openDoor(BuildContext context) async {
+    try {
+      if (!(await initBLEDevice(context))) {
+        return;
+      }
+
+      List<int> challengeBytes =
+          await readChallengeBytes(10, bleDevice!, deviceStatus.serviceUUID);
+      List<int> solution = signChallenge(challengeBytes, deviceStatus.privKey);
+      int result = await writeChallengeBytes(
+          10, bleDevice!, solution, deviceStatus.serviceUUID);
+
+      String resultMsg = "the door has been openend (successfully): $result";
+      switch (result) {
+        case 0:
+          resultMsg = "the door has been openend successfully: $result";
+          break;
+        case 1:
+          resultMsg = "To short response; see console";
+          break;
+        case 2:
+          resultMsg = "Invalid signature; see console";
+          break;
+        case 4:
+          resultMsg =
+              "The signature isn't valid; see console & ensure you've got the right private key";
+          break;
+        case 5:
+          resultMsg = "Internal Mutex-Lock error; see console";
+          break;
+        case 6:
+          resultMsg = "The server couldn't find the challenge; try again";
+          break;
+        case 7:
+          resultMsg = "The challenge has been expired; try again";
+          break;
+        case 8:
+          resultMsg =
+              "The internal communication between threads didn't work; see console";
+          break;
+      }
+      displayErrorMessage(context, "[🔓] opened successful", resultMsg);
+    } catch (e) {
+      print(e.toString());
+      if (context.mounted)
+        displayErrorMessage(context, "[🔒] Failed to open door", e.toString());
     }
   }
 
@@ -64,7 +116,7 @@ class _HomePageState extends State<HomePage> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          updateDeviceStatus(context);
+          initBLEDevice(context);
         },
         child: Stack(
           // Workaround to allow refreshing without an ListView()
@@ -105,7 +157,7 @@ class _HomePageState extends State<HomePage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
-          updateDeviceStatus(context);
+          await openDoor(context);
         },
         tooltip: 'Increment',
         label: const Text("Open"),
