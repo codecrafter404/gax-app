@@ -7,53 +7,71 @@ import 'package:gax_app/widgets/DeviceStatusWidget.dart';
 Future<BluetoothDevice> scanAndConnect(
     int timeoutAfter, DeviceInformation deviceInfo) async {
   StreamSubscription<List<ScanResult>>? devicesStream;
-  ScanResult? device;
+  BluetoothDevice? device;
   try {
     if (FlutterBluePlus.adapterStateNow == BluetoothAdapterState.off &&
         Platform.isAndroid) {
       await FlutterBluePlus.turnOn();
     }
-    devicesStream = FlutterBluePlus.onScanResults.listen((devices) async {
-      print(devices.toString());
-      if (devices.isNotEmpty) {
-        device = devices.firstWhere((x) {
-          return x.advertisementData.serviceUuids
-                  .contains(Guid.fromString(deviceInfo.serviceUUID)) &&
-              x.advertisementData.advName == deviceInfo.deviceName &&
-              _compareRemoteIDToMacAddress(x.device.remoteId, deviceInfo.mac);
-        });
+    // first search in `paired` or system devices
+    List<BluetoothDevice> systemdevices = await FlutterBluePlus.systemDevices;
+    try {
+      List<BluetoothDevice> canidates = systemdevices.where((x) {
+        return x.platformName == deviceInfo.deviceName &&
+            _compareRemoteIDToMacAddress(x.remoteId, deviceInfo.mac);
+      }).toList();
+      print("ble canidates: $canidates, systemdevices = $systemdevices");
+      // this doesn't check, if the service is availble, but its better than nothing
+      if (canidates.isNotEmpty) {
+        device = canidates[0]; // grab the first one
       }
-    });
+    } catch (_) {
+      // device = null;
+    }
+    if (device == null) {
+      devicesStream = FlutterBluePlus.onScanResults.listen((devices) async {
+        print(devices.toString());
+        if (devices.isNotEmpty) {
+          device = devices.firstWhere((x) {
+            return x.advertisementData.serviceUuids
+                    .contains(Guid.fromString(deviceInfo.serviceUUID)) &&
+                x.advertisementData.advName == deviceInfo.deviceName &&
+                _compareRemoteIDToMacAddress(x.device.remoteId, deviceInfo.mac);
+          }).device;
+        }
+      });
 
-    await FlutterBluePlus.startScan(
-      withNames: [deviceInfo.deviceName],
-      timeout: Duration(seconds: timeoutAfter),
-    );
+      await FlutterBluePlus.startScan(
+        withNames: [deviceInfo.deviceName],
+        timeout: Duration(seconds: timeoutAfter),
+      );
 
-    DateTime timeout = DateTime.now().add(Duration(seconds: timeoutAfter));
-    while (DateTime.now().compareTo(timeout) < 0) {
-      if (device != null) break;
-      await Future.delayed(const Duration(milliseconds: 100));
+      DateTime timeout = DateTime.now().add(Duration(seconds: timeoutAfter));
+      while (DateTime.now().compareTo(timeout) < 0) {
+        if (device != null) break;
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
     }
 
     if (device == null) {
       throw TimeoutException("Failed to find device in given Timeframe");
     }
 
-    device!.device.connect(timeout: Duration(seconds: timeoutAfter));
+    device!.connect(timeout: Duration(seconds: timeoutAfter));
+
     // wait for the connection to establish successfully
 
     DateTime connectTimeout =
         DateTime.now().add(Duration(seconds: timeoutAfter));
 
     while (DateTime.now().compareTo(connectTimeout) < 0) {
-      if (device!.device.isConnected) break;
+      if (device!.isConnected) break;
       await Future.delayed(const Duration(milliseconds: 100));
     }
     // await device!.device.connectionState.firstWhere((x) {
     //   return BluetoothConnectionState.connected == x;
     // });
-    return device!.device;
+    return device!;
   } catch (e) {
     rethrow;
   } finally {

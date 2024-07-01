@@ -61,8 +61,14 @@ class _HomePageState extends State<HomePage> {
       // local auth
       LocalAuthentication auth = LocalAuthentication();
       if ((await auth.isDeviceSupported()) || (await auth.canCheckBiometrics)) {
+        print(
+            "${await auth.isDeviceSupported()}, ${await auth.canCheckBiometrics}");
         bool isAuthenticated = await auth.authenticate(
-            localizedReason: "Please authenticate to open the gate");
+          localizedReason: "Please authenticate to open the gate",
+          options: const AuthenticationOptions(
+            biometricOnly: false,
+          ),
+        );
 
         if (!isAuthenticated)
           throw Exception("You've not authenticated yourself; try again");
