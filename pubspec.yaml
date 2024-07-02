@@ -40,6 +40,7 @@ dependencies:
   elliptic: ^0.3.10
   crypto: ^3.0.3
   local_auth: ^2.2.0
+  mobile_scanner: ^5.1.1
 
 dev_dependencies:
   flutter_test:

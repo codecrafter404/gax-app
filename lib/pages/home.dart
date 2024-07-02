@@ -11,9 +11,9 @@ import 'package:gax_app/widgets/Drawer.dart';
 import 'package:local_auth/local_auth.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key, required this.title});
+  const HomePage({super.key});
 
-  final String title;
+  final String title = "GA-X";
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -141,6 +141,9 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     deviceStatusChangedStream?.cancel();
+    if (bleDevice != null) {
+      bleDevice!.disconnect();
+    }
     super.dispose();
   }
 
@@ -151,7 +154,9 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
-      drawer: const AppDrawer(),
+      drawer: AppDrawer(
+        currentLocation: 0,
+      ),
       body: FutureBuilder(
           future: initBLEDevice(context),
           builder: (BuildContext context, AsyncSnapshot<void> _) {
