@@ -7,6 +7,7 @@ import 'package:gax_app/utils/ChallengeUtils.dart';
 import 'package:gax_app/utils/ErrorUtils.dart';
 import 'package:gax_app/widgets/DeviceLogs.dart';
 import 'package:gax_app/widgets/DeviceStatusWidget.dart';
+import 'package:gax_app/widgets/Drawer.dart';
 import 'package:local_auth/local_auth.dart';
 
 class HomePage extends StatefulWidget {
@@ -22,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   DeviceInformation deviceStatus = DeviceInformation.fromEssentials(
       "3C:61:05:30:B3:CE",
       "5f9b34fb-0000-1000-8000-00805f9b34fb",
+      "00000000-DEAD-BEEF-0001-000000000000",
       "UP7mKbCTI9wyP/wvOtQCtERckziLTC+gDo83tzAPQ18=", // only for testing purposes
       "GAX 0.1");
   BluetoothDevice? bleDevice;
@@ -77,11 +79,11 @@ class _HomePageState extends State<HomePage> {
         }
       }
 
-      List<int> challengeBytes =
-          await readChallengeBytes(10, bleDevice!, deviceStatus.serviceUUID);
+      List<int> challengeBytes = await readChallengeBytes(10, bleDevice!,
+          deviceStatus.serviceUUID, deviceStatus.challengeCharacteristicUUID);
       List<int> solution = signChallenge(challengeBytes, deviceStatus.privKey);
-      int result = await writeChallengeBytes(
-          10, bleDevice!, solution, deviceStatus.serviceUUID);
+      int result = await writeChallengeBytes(10, bleDevice!, solution,
+          deviceStatus.serviceUUID, deviceStatus.challengeCharacteristicUUID);
 
       resultMsg = "the gate has been openend (successfully): $result";
       switch (result) {
@@ -149,6 +151,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
       ),
+      drawer: const AppDrawer(),
       body: FutureBuilder(
           future: initBLEDevice(context),
           builder: (BuildContext context, AsyncSnapshot<void> _) {

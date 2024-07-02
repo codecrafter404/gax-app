@@ -96,7 +96,9 @@ bool _compareRemoteIDToMacAddress(DeviceIdentifier remoteId, String mac) {
 }
 
 Future<BluetoothCharacteristic> getChallengeCharacteristic(
-    BluetoothDevice device, String bleServiceUuid) async {
+    BluetoothDevice device,
+    String bleServiceUuid,
+    String bleChallengeCharacteristic) async {
   BluetoothService service;
   await device.discoverServices(timeout: 10);
   try {
@@ -112,7 +114,7 @@ Future<BluetoothCharacteristic> getChallengeCharacteristic(
   try {
     challengeCharacteristic = service.characteristics.firstWhere((x) {
       return x.characteristicUuid ==
-          Guid.fromString("00000000-DEAD-BEEF-0001-000000000000");
+          Guid.fromString(bleChallengeCharacteristic);
     });
   } catch (e) {
     throw InvalidBluetoothDeviceStateException(
@@ -122,22 +124,28 @@ Future<BluetoothCharacteristic> getChallengeCharacteristic(
   return challengeCharacteristic;
 }
 
-Future<List<int>> readChallengeBytes(
-    int timeoutAfter, BluetoothDevice device, String bleServiceUuid) async {
+Future<List<int>> readChallengeBytes(int timeoutAfter, BluetoothDevice device,
+    String bleServiceUuid, String bleChallengeCharacteristic) async {
   if (!device.isConnected) {
     throw DeviceNotConnectedException();
   }
 
   BluetoothCharacteristic challengeCharacteristic =
-      await getChallengeCharacteristic(device, bleServiceUuid);
+      await getChallengeCharacteristic(
+          device, bleServiceUuid, bleChallengeCharacteristic);
   List<int> data = await challengeCharacteristic.read(timeout: timeoutAfter);
   return data;
 }
 
-Future<int> writeChallengeBytes(int timeoutAfter, BluetoothDevice device,
-    List<int> data, String bleServiceUuid) async {
+Future<int> writeChallengeBytes(
+    int timeoutAfter,
+    BluetoothDevice device,
+    List<int> data,
+    String bleServiceUuid,
+    String bleChallengeCharacteristic) async {
   BluetoothCharacteristic challengeCharacteristic =
-      await getChallengeCharacteristic(device, bleServiceUuid);
+      await getChallengeCharacteristic(
+          device, bleServiceUuid, bleChallengeCharacteristic);
   try {
     await challengeCharacteristic.write(data);
     return 0;
