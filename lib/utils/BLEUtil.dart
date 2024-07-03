@@ -77,6 +77,9 @@ Future<BluetoothDevice> scanAndConnect(
       if (device!.isConnected) break;
       await Future.delayed(const Duration(milliseconds: 100));
     }
+    if (DateTime.now().compareTo(connectTimeout) == 1) {
+      throw InvalidBluetoothDeviceStateException(msg: "Connection timed out");
+    }
     // await device!.device.connectionState.firstWhere((x) {
     //   return BluetoothConnectionState.connected == x;
     // });

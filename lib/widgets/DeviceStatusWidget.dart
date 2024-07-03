@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:gax_app/widgets/DeviceLogs.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DeviceStatusWidget extends StatelessWidget {
   const DeviceStatusWidget({
@@ -104,23 +104,17 @@ class DeviceInformation {
   }
 
   static Future<DeviceInformation?> load() async {
-    Directory path = await getApplicationDocumentsDirectory();
-    File configFile = File('$path/device.json');
-    if (await configFile.exists()) {
-      String content = await configFile.readAsString();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? content = prefs.getString("device_config");
+    if (content != null) {
       return DeviceInformation.withEssentialsFromJson(jsonDecode(content));
     }
-
     return null;
   }
 
   Future<void> save() async {
-    Directory path = await getApplicationDocumentsDirectory();
-    File configFile = File('$path/device.json');
-    if (!(await configFile.exists())) {
-      await configFile.create(recursive: true);
-    }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     String data = jsonEncode(toJson());
-    await configFile.writeAsString(data);
+    await prefs.setString("device_config", data);
   }
 }

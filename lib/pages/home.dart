@@ -33,14 +33,21 @@ class _HomePageState extends State<HomePage> {
       }
       if (bleDevice == null || bleDevice!.isDisconnected) {
         bleDevice = await scanAndConnect(10, deviceStatus);
-        deviceStatusChangedStream =
+        deviceStatusChangedStream ==
             bleDevice!.connectionState.listen((x) async {
-          if (context != null && context.mounted) {
-            setState(() {
-              deviceStatus.deviceConnected =
-                  x == BluetoothConnectionState.connected;
+              print("connection_state: $x");
+              if (context != null && context.mounted) {
+                print("context available!");
+                setState(() {
+                  deviceStatus.deviceConnected =
+                      x == BluetoothConnectionState.connected;
+                });
+              }
             });
-          }
+        setState(() {
+          deviceStatus.deviceConnected = bleDevice!.isConnected;
+          print(
+              "connected?: ${bleDevice!.isConnected}; deviceStatus?: ${deviceStatus.deviceConnected}");
         });
       }
       return true;
@@ -54,6 +61,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> openGate(BuildContext context) async {
+    // setState(() {
+    //   deviceStatus.deviceConnected = true;
+    // });
     String resultMsg = "Empty result message";
     bool successful = false;
     try {
@@ -131,7 +141,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    initBLEDevice(null);
     super.initState();
   }
 
@@ -139,7 +148,7 @@ class _HomePageState extends State<HomePage> {
   void dispose() {
     deviceStatusChangedStream?.cancel();
     if (bleDevice != null) {
-      bleDevice!.disconnect();
+      // bleDevice!.disconnect();
     }
     super.dispose();
   }
@@ -169,7 +178,7 @@ class _HomePageState extends State<HomePage> {
         print(e);
       }
     }
-    await initBLEDevice(context);
+    // await initBLEDevice(context);
     return;
   }
 
@@ -179,6 +188,15 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () {
+              print(
+                  "Devicestatus: ${deviceStatus.deviceConnected}, ${bleDevice!.isConnected}");
+            },
+          )
+        ],
       ),
       drawer: AppDrawer(
         currentLocation: 0,
