@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:gax_app/pages/qr-scanner.dart';
 import 'package:gax_app/utils/BLEUtil.dart';
 import 'package:gax_app/utils/ChallengeUtils.dart';
 import 'package:gax_app/utils/ErrorUtils.dart';
@@ -21,11 +22,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   DeviceInformation deviceStatus = DeviceInformation.fromEssentials(
-      "3C:61:05:30:B3:CE",
-      "5f9b34fb-0000-1000-8000-00805f9b34fb",
-      "00000000-DEAD-BEEF-0001-000000000000",
-      "UP7mKbCTI9wyP/wvOtQCtERckziLTC+gDo83tzAPQ18=", // only for testing purposes
-      "GAX 0.1");
+      "Loading...", "Loading...", "Loading...", "Loading...", "Loading...");
   BluetoothDevice? bleDevice;
   StreamSubscription<BluetoothConnectionState>? deviceStatusChangedStream;
 
@@ -147,6 +144,35 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  Future<void> initAsyncState(BuildContext context) async {
+    try {
+      var res = await DeviceInformation.load();
+      if (res != null) {
+        deviceStatus = res;
+      } else {
+        if (context.mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const QRCodeScannerPage(
+                isSetup: true,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        displayErrorMessage(context, "Failed to read configuration",
+            "Failed to read configuration: $e");
+      } else {
+        print(e);
+      }
+    }
+    await initBLEDevice(context);
+    return;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -158,11 +184,11 @@ class _HomePageState extends State<HomePage> {
         currentLocation: 0,
       ),
       body: FutureBuilder(
-          future: initBLEDevice(context),
+          future: initAsyncState(context),
           builder: (BuildContext context, AsyncSnapshot<void> _) {
             return RefreshIndicator(
               onRefresh: () async {
-                initBLEDevice(context);
+                await initBLEDevice(context);
               },
               child: Stack(
                 // Workaround to allow refreshing without an ListView()

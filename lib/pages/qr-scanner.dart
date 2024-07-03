@@ -8,7 +8,8 @@ import 'package:gax_app/widgets/Drawer.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class QRCodeScannerPage extends StatelessWidget {
-  const QRCodeScannerPage({super.key});
+  final bool isSetup;
+  const QRCodeScannerPage({super.key, required this.isSetup});
 
   @override
   Widget build(BuildContext context) {
@@ -17,9 +18,11 @@ class QRCodeScannerPage extends StatelessWidget {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text("Scan the QR-Code"),
       ),
-      drawer: AppDrawer(
-        currentLocation: 1,
-      ),
+      drawer: !isSetup
+          ? AppDrawer(
+              currentLocation: 1,
+            )
+          : null,
       body: Align(
         alignment: Alignment.center,
         child: MobileScanner(

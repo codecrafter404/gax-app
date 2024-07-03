@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:gax_app/pages/home.dart';
 import 'package:gax_app/utils/ErrorUtils.dart';
 import 'package:gax_app/widgets/DeviceStatusWidget.dart';
 import 'package:gax_app/widgets/Drawer.dart';
@@ -15,7 +16,7 @@ class EditPage extends StatefulWidget {
 class EditPageState extends State<EditPage> {
   EditPageState({this.deviceInfo});
   final _formKey = GlobalKey<FormState>();
-  final DeviceInformation? deviceInfo;
+  DeviceInformation? deviceInfo;
 
   @override
   Widget build(BuildContext context) {
@@ -25,11 +26,33 @@ class EditPageState extends State<EditPage> {
         title: const Text("Edit the configuration"),
         actions: [
           IconButton(
-            icon: Icon(Icons.save_rounded),
-            onPressed: () {
+            icon: const Icon(Icons.save_rounded),
+            onPressed: () async {
               if (_formKey.currentState!.validate()) {
+                _formKey.currentState!.save();
+                try {
+                  await deviceInfo!.save();
+                  if (context.mounted) {
+                    displayErrorMessage(
+                        context, "Saved😀", "The settings have been updated");
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => HomePage(),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    displayErrorMessage(
+                        context, "Failed to save config", e.toString());
+                  } else {
+                    print(e);
+                  }
+                }
+              } else {
                 displayErrorMessage(
-                    context, "SAVE", "The settings have been updated");
+                    context, "Fill in the required fields.", "do it 😠");
               }
             },
           )
@@ -45,7 +68,7 @@ class EditPageState extends State<EditPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 18, 24, 16),
               child: TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "device name",
                   border: OutlineInputBorder(),
                 ),
@@ -55,12 +78,21 @@ class EditPageState extends State<EditPage> {
                   if (x == null || x.isEmpty) return "device name is required";
                   return null;
                 },
+                onSaved: (x) {
+                  if (x != null) {
+                    if (deviceInfo == null) {
+                      DeviceInformation.fromEssentials("", "", "", "", x);
+                    } else {
+                      deviceInfo!.deviceName = x;
+                    }
+                  }
+                },
               ),
             ),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 18, 24, 16),
               child: TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "MAC-Address",
                   border: OutlineInputBorder(),
                 ),
@@ -75,6 +107,15 @@ class EditPageState extends State<EditPage> {
                     return "Format: XX:XX:XX:XX:XX:XX";
                   return null;
                 },
+                onSaved: (x) {
+                  if (x != null) {
+                    if (deviceInfo == null) {
+                      DeviceInformation.fromEssentials(x, "", "", "", "");
+                    } else {
+                      deviceInfo!.mac = x;
+                    }
+                  }
+                },
               ),
             ),
             Padding(
@@ -85,10 +126,19 @@ class EditPageState extends State<EditPage> {
                 inputFormatters: [UpperCaseTextFormatter()],
                 textCapitalization: TextCapitalization.characters,
                 initialValue: deviceInfo?.privKey,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Private Key",
                   border: OutlineInputBorder(),
                 ),
+                onSaved: (x) {
+                  if (x != null) {
+                    if (deviceInfo == null) {
+                      DeviceInformation.fromEssentials("", "", "", x, "");
+                    } else {
+                      deviceInfo!.privKey = x;
+                    }
+                  }
+                },
                 validator: (x) {
                   if (x == null || x.isEmpty) return "Private Key is required";
                   if (!RegExp(
@@ -106,7 +156,7 @@ class EditPageState extends State<EditPage> {
                 inputFormatters: [UpperCaseTextFormatter()],
                 initialValue: deviceInfo?.serviceUUID,
                 textCapitalization: TextCapitalization.characters,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "Service-UUID",
                   border: OutlineInputBorder(),
                 ),
@@ -118,6 +168,15 @@ class EditPageState extends State<EditPage> {
                     return "Format: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX";
                   return null;
                 },
+                onSaved: (x) {
+                  if (x != null) {
+                    if (deviceInfo == null) {
+                      DeviceInformation.fromEssentials("", x, "", "", "");
+                    } else {
+                      deviceInfo!.serviceUUID = x;
+                    }
+                  }
+                },
               ),
             ),
             Padding(
@@ -126,7 +185,7 @@ class EditPageState extends State<EditPage> {
                 autocorrect: false,
                 autovalidateMode: AutovalidateMode.always,
                 initialValue: deviceInfo?.challengeCharacteristicUUID,
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: "ChallangeCharacteristic-UUID",
                   border: OutlineInputBorder(),
                 ),
@@ -137,6 +196,15 @@ class EditPageState extends State<EditPage> {
                       .hasMatch(x))
                     return "Format: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX";
                   return null;
+                },
+                onSaved: (x) {
+                  if (x != null) {
+                    if (deviceInfo == null) {
+                      DeviceInformation.fromEssentials("", "", x, "", "");
+                    } else {
+                      deviceInfo!.challengeCharacteristicUUID = x;
+                    }
+                  }
                 },
               ),
             ),

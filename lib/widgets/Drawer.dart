@@ -33,7 +33,9 @@ class AppDrawer extends StatelessWidget {
       label: "Scan QR-Code",
       icon: Icon(Icons.qr_code_outlined),
       selectedIcon: Icon(Icons.qr_code),
-      page: QRCodeScannerPage(),
+      page: QRCodeScannerPage(
+        isSetup: false,
+      ),
       push: false,
     ),
     Destination(

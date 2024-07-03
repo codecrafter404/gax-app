@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:gax_app/widgets/DeviceLogs.dart';
+import 'package:path_provider/path_provider.dart';
 
 class DeviceStatusWidget extends StatelessWidget {
   const DeviceStatusWidget({
@@ -88,5 +92,35 @@ class DeviceInformation {
     final name = data['ble_name'] as String;
     return DeviceInformation.fromEssentials(
         mac, serviceUUID, challengeCharacteristicUUID, privKey, name);
+  }
+  Map<String, dynamic> toJson() {
+    return {
+      'mac': mac,
+      'service_uuid': serviceUUID,
+      'lock_char_uuid': challengeCharacteristicUUID,
+      'priv_key': privKey,
+      'ble_name': deviceName,
+    };
+  }
+
+  static Future<DeviceInformation?> load() async {
+    Directory path = await getApplicationDocumentsDirectory();
+    File configFile = File('$path/device.json');
+    if (await configFile.exists()) {
+      String content = await configFile.readAsString();
+      return DeviceInformation.withEssentialsFromJson(jsonDecode(content));
+    }
+
+    return null;
+  }
+
+  Future<void> save() async {
+    Directory path = await getApplicationDocumentsDirectory();
+    File configFile = File('$path/device.json');
+    if (!(await configFile.exists())) {
+      await configFile.create(recursive: true);
+    }
+    String data = jsonEncode(toJson());
+    await configFile.writeAsString(data);
   }
 }
