@@ -118,3 +118,8 @@ class DeviceInformation {
     await prefs.setString("device_config", data);
   }
 }
+
+class ConfigLoadException implements Exception {
+  final String msg;
+  ConfigLoadException({required this.msg});
+}

@@ -42,6 +42,7 @@ dependencies:
   local_auth: ^2.2.0
   mobile_scanner: ^5.1.1
   shared_preferences: ^2.2.3
+  font_awesome_flutter: ^10.7.0
 
 dev_dependencies:
   flutter_test:

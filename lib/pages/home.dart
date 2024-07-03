@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:gax_app/pages/qr-scanner.dart';
 import 'package:gax_app/utils/BLEUtil.dart';
 import 'package:gax_app/utils/ChallengeUtils.dart';
@@ -36,10 +37,6 @@ class _HomePageState extends State<HomePage> {
       }
     } catch (e) {
       throw BleInitException(msg: e.toString());
-      // print(e.toString());
-      // if (context != null && context.mounted) {
-      //   displayErrorMessage(context, "[🔌] failed to connect", e.toString());
-      // }
     }
   }
 
@@ -150,6 +147,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<bool> initAsyncState() async {
     bool shouldSetup = await loadInformation();
+    if (shouldSetup) return true;
     await initBLEDevice();
     return shouldSetup;
   }
@@ -157,12 +155,22 @@ class _HomePageState extends State<HomePage> {
   void handleAsyncInitError(BuildContext context, Object e) {
     switch (e.runtimeType) {
       case BleInitException:
-        displayErrorMessage(context, "[🔌] failed to connect",
-            (e as BleInitException).msg.toString());
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => displayErrorMessage(
+            context,
+            "[🔌] failed to connect",
+            (e as BleInitException).msg.toString(),
+          ),
+        );
         break;
       case ConfigLoadException:
-        displayErrorMessage(context, "[⚙️] Failed to read configuration",
-            (e as ConfigLoadException).msg.toString());
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => displayErrorMessage(
+            context,
+            "[⚙️] Failed to read configuration",
+            (e as ConfigLoadException).msg.toString(),
+          ),
+        );
         break;
       default:
         WidgetsBinding.instance.addPostFrameCallback(
@@ -177,14 +185,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   void setupStateChangeStream(BuildContext context) {
-    deviceStatusChangedStream ??= bleDevice!.connectionState.listen(
+    deviceStatusChangedStream ??= bleDevice?.connectionState.listen(
       (x) async {
-        print("connection_state: $x");
         if (context.mounted) {
           bool isConnected = x == BluetoothConnectionState.connected;
           setState(() {
             deviceStatus.deviceConnected = isConnected;
-            print("updating connection state: ${isConnected}");
           });
         }
       },
@@ -199,19 +205,45 @@ class _HomePageState extends State<HomePage> {
         title: Text(widget.title),
         actions: [
           IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () {
-              print(
-                  "Devicestatus: ${deviceStatus.deviceConnected}, ${bleDevice?.isConnected}");
-              setState(() {
-                deviceStatus.logEntries.add(
-                  DeviceLogEntry(
-                    mac: "",
-                    status: DeviceLogEntryStatus.failure,
-                    time: DateTime.now(),
-                  ),
-                );
-              });
+            icon: deviceStatus.deviceConnected
+                ? Icon(FontAwesomeIcons.linkSlash)
+                : Icon(FontAwesomeIcons.link),
+            onPressed: () async {
+              if (deviceStatus.deviceConnected) {
+                try {
+                  await bleDevice?.disconnect();
+                  bleDevice = null;
+                  await deviceStatusChangedStream?.cancel();
+                  deviceStatusChangedStream = null;
+                } catch (e) {
+                  if (context.mounted) {
+                    displayErrorMessage(
+                        context, "[🔗] Failed to disconnect", e.toString());
+                  } else {
+                    print(e);
+                  }
+                }
+              } else {
+                try {
+                  bool shouldSetup = await initAsyncState();
+                  if (!shouldSetup) {
+                    setupStateChangeStream(context);
+                  } else {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const QRCodeScannerPage(
+                          isSetup: true,
+                        ),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    handleAsyncInitError(context, e);
+                  }
+                }
+              }
             },
           )
         ],
@@ -225,11 +257,14 @@ class _HomePageState extends State<HomePage> {
             if (snapshot.hasData) {
               if (snapshot.data!) {
                 // Intro
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const QRCodeScannerPage(
-                      isSetup: true,
+                WidgetsBinding.instance.addPostFrameCallback(
+                  // after the page has been rendered!
+                  (_) => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const QRCodeScannerPage(
+                        isSetup: true,
+                      ),
                     ),
                   ),
                 );
@@ -250,8 +285,9 @@ class _HomePageState extends State<HomePage> {
                 }
                 try {
                   bool shouldSetup = await initAsyncState();
-                  assert(!shouldSetup);
-                  setupStateChangeStream(context);
+                  if (!shouldSetup) {
+                    setupStateChangeStream(context);
+                  }
                 } catch (e) {
                   if (context.mounted) {
                     handleAsyncInitError(context, e);
@@ -311,9 +347,4 @@ class _HomePageState extends State<HomePage> {
 class BleInitException implements Exception {
   final String msg;
   BleInitException({required this.msg});
-}
-
-class ConfigLoadException implements Exception {
-  final String msg;
-  ConfigLoadException({required this.msg});
 }
