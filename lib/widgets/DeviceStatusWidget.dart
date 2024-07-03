@@ -68,12 +68,12 @@ class DeviceInformation {
       required this.serviceUUID,
       required this.challengeCharacteristicUUID});
   factory DeviceInformation.fromEssentials(String mac, String serviceUUID,
-      String challengeCharacteristicUUID, String pubKey, String name) {
+      String challengeCharacteristicUUID, String privKey, String name) {
     return DeviceInformation(
         deviceConnected: false,
         deviceName: name,
         mac: mac,
-        privKey: pubKey,
+        privKey: privKey,
         powerOnHours: -1,
         logEntries: [],
         serviceUUID: serviceUUID,

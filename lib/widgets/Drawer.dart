@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gax_app/pages/EditPage.dart';
 import 'package:gax_app/pages/home.dart';
 import 'package:gax_app/pages/qr-scanner.dart';
 
@@ -33,6 +34,13 @@ class AppDrawer extends StatelessWidget {
       icon: Icon(Icons.qr_code_outlined),
       selectedIcon: Icon(Icons.qr_code),
       page: QRCodeScannerPage(),
+      push: true,
+    ),
+    Destination(
+      label: "Edit configuration",
+      icon: Icon(Icons.edit_note_rounded),
+      selectedIcon: Icon(Icons.edit_note_rounded),
+      page: EditPage(),
       push: true,
     ),
   ];
