@@ -79,4 +79,14 @@ class DeviceInformation {
         serviceUUID: serviceUUID,
         challengeCharacteristicUUID: challengeCharacteristicUUID);
   }
+  factory DeviceInformation.withEssentialsFromJson(Map<String, dynamic> data) {
+    final mac = (data['mac'] as String).toUpperCase();
+    final serviceUUID = (data['service_uuid'] as String).toUpperCase();
+    final challengeCharacteristicUUID =
+        (data['lock_char_uuid'] as String).toUpperCase();
+    final privKey = data['priv_key'] as String;
+    final name = data['ble_name'] as String;
+    return DeviceInformation.fromEssentials(
+        mac, serviceUUID, challengeCharacteristicUUID, privKey, name);
+  }
 }

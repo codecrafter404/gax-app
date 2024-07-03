@@ -34,14 +34,14 @@ class AppDrawer extends StatelessWidget {
       icon: Icon(Icons.qr_code_outlined),
       selectedIcon: Icon(Icons.qr_code),
       page: QRCodeScannerPage(),
-      push: true,
+      push: false,
     ),
     Destination(
       label: "Edit configuration",
       icon: Icon(Icons.edit_note_rounded),
       selectedIcon: Icon(Icons.edit_note_rounded),
       page: EditPage(),
-      push: true,
+      push: false,
     ),
   ];
 
