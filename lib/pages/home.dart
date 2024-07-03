@@ -26,51 +26,28 @@ class _HomePageState extends State<HomePage> {
   BluetoothDevice? bleDevice;
   StreamSubscription<BluetoothConnectionState>? deviceStatusChangedStream;
 
-  Future<bool> initBLEDevice(BuildContext? context) async {
+  Future<void> initBLEDevice() async {
     try {
       if (!(await FlutterBluePlus.isSupported)) {
         throw Exception("Your device doesn't support BLE");
       }
       if (bleDevice == null || bleDevice!.isDisconnected) {
         bleDevice = await scanAndConnect(10, deviceStatus);
-        deviceStatusChangedStream ==
-            bleDevice!.connectionState.listen((x) async {
-              print("connection_state: $x");
-              if (context != null && context.mounted) {
-                print("context available!");
-                setState(() {
-                  deviceStatus.deviceConnected =
-                      x == BluetoothConnectionState.connected;
-                });
-              }
-            });
-        setState(() {
-          deviceStatus.deviceConnected = bleDevice!.isConnected;
-          print(
-              "connected?: ${bleDevice!.isConnected}; deviceStatus?: ${deviceStatus.deviceConnected}");
-        });
       }
-      return true;
     } catch (e) {
-      print(e.toString());
-      if (context != null && context.mounted) {
-        displayErrorMessage(context, "[🔌] failed to connect", e.toString());
-      }
+      throw BleInitException(msg: e.toString());
+      // print(e.toString());
+      // if (context != null && context.mounted) {
+      //   displayErrorMessage(context, "[🔌] failed to connect", e.toString());
+      // }
     }
-    return false;
   }
 
   Future<void> openGate(BuildContext context) async {
-    // setState(() {
-    //   deviceStatus.deviceConnected = true;
-    // });
     String resultMsg = "Empty result message";
     bool successful = false;
     try {
-      if (!(await initBLEDevice(context))) {
-        return;
-      }
-
+      await initBLEDevice();
       // local auth
       LocalAuthentication auth = LocalAuthentication();
       if (await auth.isDeviceSupported()) {
@@ -139,8 +116,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  late Future<bool> future;
+
   @override
   void initState() {
+    future = initAsyncState();
     super.initState();
   }
 
@@ -153,33 +133,62 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  Future<void> initAsyncState(BuildContext context) async {
+  //Returns a bool indecating if the you should navigate to the setup screen or not
+  Future<bool> loadInformation() async {
     try {
       var res = await DeviceInformation.load();
       if (res != null) {
         deviceStatus = res;
       } else {
-        if (context.mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const QRCodeScannerPage(
-                isSetup: true,
-              ),
-            ),
-          );
-        }
+        return true;
       }
     } catch (e) {
-      if (context.mounted) {
-        displayErrorMessage(context, "Failed to read configuration",
-            "Failed to read configuration: $e");
-      } else {
-        print(e);
-      }
+      throw ConfigLoadException(msg: e.toString());
     }
-    // await initBLEDevice(context);
-    return;
+    return false;
+  }
+
+  Future<bool> initAsyncState() async {
+    bool shouldSetup = await loadInformation();
+    await initBLEDevice();
+    return shouldSetup;
+  }
+
+  void handleAsyncInitError(BuildContext context, Object e) {
+    switch (e.runtimeType) {
+      case BleInitException:
+        displayErrorMessage(context, "[🔌] failed to connect",
+            (e as BleInitException).msg.toString());
+        break;
+      case ConfigLoadException:
+        displayErrorMessage(context, "[⚙️] Failed to read configuration",
+            (e as ConfigLoadException).msg.toString());
+        break;
+      default:
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => displayErrorMessage(
+            context,
+            "[⚡] An error during initalization occured",
+            e.toString(),
+          ),
+        );
+        break;
+    }
+  }
+
+  void setupStateChangeStream(BuildContext context) {
+    deviceStatusChangedStream ??= bleDevice!.connectionState.listen(
+      (x) async {
+        print("connection_state: $x");
+        if (context.mounted) {
+          bool isConnected = x == BluetoothConnectionState.connected;
+          setState(() {
+            deviceStatus.deviceConnected = isConnected;
+            print("updating connection state: ${isConnected}");
+          });
+        }
+      },
+    );
   }
 
   @override
@@ -193,7 +202,16 @@ class _HomePageState extends State<HomePage> {
             icon: Icon(Icons.logout),
             onPressed: () {
               print(
-                  "Devicestatus: ${deviceStatus.deviceConnected}, ${bleDevice!.isConnected}");
+                  "Devicestatus: ${deviceStatus.deviceConnected}, ${bleDevice?.isConnected}");
+              setState(() {
+                deviceStatus.logEntries.add(
+                  DeviceLogEntry(
+                    mac: "",
+                    status: DeviceLogEntryStatus.failure,
+                    time: DateTime.now(),
+                  ),
+                );
+              });
             },
           )
         ],
@@ -201,12 +219,44 @@ class _HomePageState extends State<HomePage> {
       drawer: AppDrawer(
         currentLocation: 0,
       ),
-      body: FutureBuilder(
-          future: initAsyncState(context),
-          builder: (BuildContext context, AsyncSnapshot<void> _) {
+      body: FutureBuilder<bool>(
+          future: future,
+          builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+            if (snapshot.hasData) {
+              if (snapshot.data!) {
+                // Intro
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const QRCodeScannerPage(
+                      isSetup: true,
+                    ),
+                  ),
+                );
+              } else {
+                setupStateChangeStream(context);
+              }
+            } else if (snapshot.hasError) {
+              var e = snapshot.error!;
+              handleAsyncInitError(context, e);
+            }
+
             return RefreshIndicator(
               onRefresh: () async {
-                await initBLEDevice(context);
+                if (snapshot.connectionState != ConnectionState.done) {
+                  displayErrorMessage(context, "[⏳] Currently loading",
+                      "The app has not jet finished loading");
+                  return;
+                }
+                try {
+                  bool shouldSetup = await initAsyncState();
+                  assert(!shouldSetup);
+                  setupStateChangeStream(context);
+                } catch (e) {
+                  if (context.mounted) {
+                    handleAsyncInitError(context, e);
+                  }
+                }
               },
               child: Stack(
                 // Workaround to allow refreshing without an ListView()
@@ -256,4 +306,14 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+}
+
+class BleInitException implements Exception {
+  final String msg;
+  BleInitException({required this.msg});
+}
+
+class ConfigLoadException implements Exception {
+  final String msg;
+  ConfigLoadException({required this.msg});
 }
