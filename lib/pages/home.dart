@@ -72,35 +72,7 @@ class _HomePageState extends State<HomePage> {
       int result = await writeChallengeBytes(10, bleDevice!, solution,
           deviceStatus.serviceUUID, deviceStatus.challengeCharacteristicUUID);
 
-      resultMsg = "the gate has been openend (successfully): $result";
-      switch (result) {
-        case 0:
-          resultMsg = "the gate has been openend successfully: $result";
-          break;
-        case 1:
-          resultMsg = "To short response; see console";
-          break;
-        case 2:
-          resultMsg = "Invalid signature; see console";
-          break;
-        case 4:
-          resultMsg =
-              "The signature isn't valid; see console & ensure you've got the right private key";
-          break;
-        case 5:
-          resultMsg = "Internal Mutex-Lock error; see console";
-          break;
-        case 6:
-          resultMsg = "The server couldn't find the challenge; try again";
-          break;
-        case 7:
-          resultMsg = "The challenge has been expired; try again";
-          break;
-        case 8:
-          resultMsg =
-              "The internal communication between threads didn't work; see console";
-          break;
-      }
+      resultMsg = getMessageToErrorCode(result);
       successful = result == 0;
     } on InvalidBluetoothDeviceStateException catch (e) {
       resultMsg =
@@ -164,6 +136,7 @@ class _HomePageState extends State<HomePage> {
     try {
       deviceStatus.logEntries = await readLogs(10, bleDevice!,
           deviceStatus.serviceUUID, deviceStatus.logsCharacteristicUUID);
+      // deviceStatus.logEntries = deviceStatus.logEntries.reversed.toList();
     } catch (e) {
       throw DeviceLogReadException(msg: e.toString());
     }
@@ -414,4 +387,37 @@ class MetaDataReadException implements Exception {
 class DeviceLogReadException implements Exception {
   final String msg;
   DeviceLogReadException({required this.msg});
+}
+
+String getMessageToErrorCode(int code) {
+  String res = "the gate has been openend (successfully): $code";
+  switch (code) {
+    case 0:
+      res = "the gate has been openend successfully: $code";
+      break;
+    case 1:
+      res = "To short response; see console";
+      break;
+    case 2:
+      res = "Invalid signature; see console";
+      break;
+    case 4:
+      res =
+          "The signature isn't valid; see console & ensure you've got the right private key";
+      break;
+    case 5:
+      res = "Internal Mutex-Lock error; see console";
+      break;
+    case 6:
+      res = "The server couldn't find the challenge; try again";
+      break;
+    case 7:
+      res = "The challenge has been expired; try again";
+      break;
+    case 8:
+      res =
+          "The internal communication between threads didn't work; see console";
+      break;
+  }
+  return res;
 }

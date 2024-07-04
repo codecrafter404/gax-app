@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:gax_app/pages/home.dart';
 
 class DeviceLogEntry {
   final String mac;
@@ -50,11 +52,11 @@ class DeviceLogs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    logs.sort((a, b) => a.time.compareTo(b.time));
+    logs.sort((a, b) => b.time.compareTo(a.time));
 
     return logs.isNotEmpty
         ? ListView(
-            children: logs.map((a) => buildListTile(a)).toList(),
+            children: logs.map((a) => buildListTile(a, context)).toList(),
           )
         : const Center(
             child: Column(
@@ -67,13 +69,44 @@ class DeviceLogs extends StatelessWidget {
           );
   }
 
-  ListTile buildListTile(DeviceLogEntry entry) {
+  ListTile buildListTile(DeviceLogEntry entry, BuildContext context) {
     return ListTile(
-      title: Text(entry.time.toIso8601String()),
+      title: Text(
+          "${entry.time.day.toString().padLeft(2, '0')}.${entry.time.month.toString().padLeft(2, '0')}.${entry.time.year.toString().padLeft(4, '0')} ${entry.time.hour.toString().padLeft(2, '0')}:${entry.time.minute.toString().padLeft(2, '0')}:${entry.time.second.toString().padLeft(2, '0')}"), // DD.MM.YYYY HH:mm:ss
       subtitle: Text(entry.mac.toUpperCase()),
-      leading: const CircleAvatar(
-        child: Icon(Icons.check_sharp),
+      leading: CircleAvatar(
+        child: entry.status == DeviceLogEntryStatus.success
+            ? Icon(Icons.check_sharp)
+            : Icon(Icons.error),
       ),
+      onTap: () {
+        if (entry.status == DeviceLogEntryStatus.failure) {
+          String msg = getMessageToErrorCode(entry.errorCode!);
+          showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: Text("Error Message:"),
+                content: Text(msg),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      await Clipboard.setData(ClipboardData(text: msg));
+                    },
+                    child: const Text("Copy"),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context, "");
+                    },
+                    child: const Text("Close"),
+                  )
+                ],
+              );
+            },
+          );
+        }
+      },
     );
   }
 }
