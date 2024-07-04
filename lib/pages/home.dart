@@ -23,7 +23,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   DeviceInformation deviceStatus = DeviceInformation.fromEssentials(
-      "Loading...", "Loading...", "Loading...", "Loading...", "Loading...");
+    "Loading...",
+    "Loading...",
+    "Loading...",
+    "Loading...",
+    "Loading...",
+    "Loading...",
+  );
   BluetoothDevice? bleDevice;
   StreamSubscription<BluetoothConnectionState>? deviceStatusChangedStream;
 

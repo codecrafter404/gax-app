@@ -89,6 +89,12 @@ class EditPageState extends State<EditPage> {
               deviceInfo = snapshot.data;
             }
 
+            if (snapshot.connectionState != ConnectionState.done) {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+
             return Form(
               key: _formKey,
               child: ListView(
@@ -110,7 +116,8 @@ class EditPageState extends State<EditPage> {
                       onSaved: (x) {
                         if (x != null) {
                           if (deviceInfo == null) {
-                            DeviceInformation.fromEssentials("", "", "", "", x);
+                            DeviceInformation.fromEssentials(
+                                "", "", "", "", x, "");
                           } else {
                             deviceInfo!.deviceName = x;
                           }
@@ -140,7 +147,8 @@ class EditPageState extends State<EditPage> {
                       onSaved: (x) {
                         if (x != null) {
                           if (deviceInfo == null) {
-                            DeviceInformation.fromEssentials(x, "", "", "", "");
+                            DeviceInformation.fromEssentials(
+                                x, "", "", "", "", "");
                           } else {
                             deviceInfo!.mac = x;
                           }
@@ -163,7 +171,8 @@ class EditPageState extends State<EditPage> {
                       onSaved: (x) {
                         if (x != null) {
                           if (deviceInfo == null) {
-                            DeviceInformation.fromEssentials("", "", "", x, "");
+                            DeviceInformation.fromEssentials(
+                                "", "", "", x, "", "");
                           } else {
                             deviceInfo!.privKey = x;
                           }
@@ -204,7 +213,8 @@ class EditPageState extends State<EditPage> {
                       onSaved: (x) {
                         if (x != null) {
                           if (deviceInfo == null) {
-                            DeviceInformation.fromEssentials("", x, "", "", "");
+                            DeviceInformation.fromEssentials(
+                                "", x, "", "", "", "");
                           } else {
                             deviceInfo!.serviceUUID = x;
                           }
@@ -224,7 +234,7 @@ class EditPageState extends State<EditPage> {
                       ),
                       validator: (x) {
                         if (x == null || x.isEmpty)
-                          return "Service-UUID is required";
+                          return "ChallangeCharacteristic-UUID is required";
                         if (!RegExp(
                                 "^[A-F\\d]{8}-[A-F\\d]{4}-[A-F\\d]{4}-[A-F\\d]{4}-[A-F\\d]{12}\$")
                             .hasMatch(x))
@@ -234,7 +244,8 @@ class EditPageState extends State<EditPage> {
                       onSaved: (x) {
                         if (x != null) {
                           if (deviceInfo == null) {
-                            DeviceInformation.fromEssentials("", "", x, "", "");
+                            DeviceInformation.fromEssentials(
+                                "", "", x, "", "", "");
                           } else {
                             deviceInfo!.challengeCharacteristicUUID = x;
                           }
@@ -242,6 +253,37 @@ class EditPageState extends State<EditPage> {
                       },
                     ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 18, 24, 16),
+                    child: TextFormField(
+                      autocorrect: false,
+                      autovalidateMode: AutovalidateMode.always,
+                      initialValue: deviceInfo?.metaCharacteristicUUID,
+                      decoration: const InputDecoration(
+                        labelText: "MetaCharacteristic-UUID",
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (x) {
+                        if (x == null || x.isEmpty)
+                          return "MetaCharacteristic-UUID is required";
+                        if (!RegExp(
+                                "^[A-F\\d]{8}-[A-F\\d]{4}-[A-F\\d]{4}-[A-F\\d]{4}-[A-F\\d]{12}\$")
+                            .hasMatch(x))
+                          return "Format: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX";
+                        return null;
+                      },
+                      onSaved: (x) {
+                        if (x != null) {
+                          if (deviceInfo == null) {
+                            DeviceInformation.fromEssentials(
+                                "", "", "", "", "", x);
+                          } else {
+                            deviceInfo!.metaCharacteristicUUID = x;
+                          }
+                        }
+                      },
+                    ),
+                  )
                 ],
               ),
             );

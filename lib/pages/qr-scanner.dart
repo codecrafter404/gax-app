@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:gax_app/pages/EditPage.dart';
 import 'package:gax_app/utils/ErrorUtils.dart';
 import 'package:gax_app/widgets/DeviceStatusWidget.dart';
@@ -17,6 +18,21 @@ class QRCodeScannerPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text("Scan the QR-Code"),
+        actions: isSetup
+            ? [
+                IconButton(
+                  icon: const Icon(FontAwesomeIcons.penToSquare),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EditPage(),
+                      ),
+                    );
+                  },
+                )
+              ]
+            : [],
       ),
       drawer: !isSetup
           ? AppDrawer(

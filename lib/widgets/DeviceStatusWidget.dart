@@ -29,7 +29,7 @@ class DeviceStatusWidget extends StatelessWidget {
         buildTableRow(
           "Power-On-Hours:",
           "${deviceStatus.powerOnHours.toString()}h",
-          Theme.of(context).primaryColor,
+          Theme.of(context).colorScheme.primary,
         )
       ],
     );
@@ -59,6 +59,7 @@ class DeviceInformation {
   String mac;
   String serviceUUID;
   String challengeCharacteristicUUID;
+  String metaCharacteristicUUID;
   String privKey;
   List<DeviceLogEntry> logEntries;
 
@@ -70,28 +71,38 @@ class DeviceInformation {
       required this.privKey,
       required this.logEntries,
       required this.serviceUUID,
-      required this.challengeCharacteristicUUID});
-  factory DeviceInformation.fromEssentials(String mac, String serviceUUID,
-      String challengeCharacteristicUUID, String privKey, String name) {
+      required this.challengeCharacteristicUUID,
+      required this.metaCharacteristicUUID});
+  factory DeviceInformation.fromEssentials(
+      String mac,
+      String serviceUUID,
+      String challengeCharacteristicUUID,
+      String privKey,
+      String name,
+      String metaCharacteristicUUID) {
     return DeviceInformation(
-        deviceConnected: false,
-        deviceName: name,
-        mac: mac,
-        privKey: privKey,
-        powerOnHours: -1,
-        logEntries: [],
-        serviceUUID: serviceUUID,
-        challengeCharacteristicUUID: challengeCharacteristicUUID);
+      deviceConnected: false,
+      deviceName: name,
+      mac: mac,
+      privKey: privKey,
+      powerOnHours: -1,
+      logEntries: [],
+      serviceUUID: serviceUUID,
+      challengeCharacteristicUUID: challengeCharacteristicUUID,
+      metaCharacteristicUUID: metaCharacteristicUUID,
+    );
   }
   factory DeviceInformation.withEssentialsFromJson(Map<String, dynamic> data) {
     final mac = (data['mac'] as String).toUpperCase();
     final serviceUUID = (data['service_uuid'] as String).toUpperCase();
     final challengeCharacteristicUUID =
         (data['lock_char_uuid'] as String).toUpperCase();
+    final metaCharacteristicUUID =
+        (data['meta_char_uuid'] as String).toUpperCase();
     final privKey = data['priv_key'] as String;
     final name = data['ble_name'] as String;
-    return DeviceInformation.fromEssentials(
-        mac, serviceUUID, challengeCharacteristicUUID, privKey, name);
+    return DeviceInformation.fromEssentials(mac, serviceUUID,
+        challengeCharacteristicUUID, privKey, name, metaCharacteristicUUID);
   }
   Map<String, dynamic> toJson() {
     return {
@@ -100,6 +111,7 @@ class DeviceInformation {
       'lock_char_uuid': challengeCharacteristicUUID,
       'priv_key': privKey,
       'ble_name': deviceName,
+      'meta_char_uuid': metaCharacteristicUUID,
     };
   }
 
