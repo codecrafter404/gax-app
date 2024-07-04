@@ -2,37 +2,74 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:gax_app/pages/OptionsPage.dart';
 import 'package:gax_app/widgets/DeviceLogs.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class DeviceStatusWidget extends StatelessWidget {
+class DeviceStatusWidget extends StatefulWidget {
   const DeviceStatusWidget({
     super.key,
     required this.deviceStatus,
   });
 
   final DeviceInformation deviceStatus;
+
+  @override
+  State<DeviceStatusWidget> createState() => _DeviceStatusWidgetState(
+        deviceStatus: deviceStatus,
+      );
+}
+
+class _DeviceStatusWidgetState extends State<DeviceStatusWidget> {
+  final DeviceInformation deviceStatus;
+  _DeviceStatusWidgetState({required this.deviceStatus});
+
+  late Future<ConfigOptions> future;
+
+  Future<ConfigOptions> loadConfig() async {
+    return await ConfigOptions.load();
+  }
+
+  late ConfigOptions options;
+
+  @override
+  void initState() {
+    future = loadConfig();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Table(
-      columnWidths: const {
-        0: IntrinsicColumnWidth(),
-        1: FlexColumnWidth(),
-      },
-      defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-      children: [
-        buildTableRow(
-          "Device connected:",
-          deviceStatus.deviceConnected ? "true" : "false",
-          deviceStatus.deviceConnected ? Colors.green : Colors.red,
-        ),
-        buildTableRow(
-          "Power-On-Hours:",
-          "${((deviceStatus.deviceMetadata?.powerOnHours ?? -1) * 10).round() / 10.0}h",
-          Theme.of(context).colorScheme.primary,
-        ),
-      ],
-    );
+    return FutureBuilder<ConfigOptions>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != BluetoothConnectionState.connected) {
+            return Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          return Table(
+            columnWidths: const {
+              0: IntrinsicColumnWidth(),
+              1: FlexColumnWidth(),
+            },
+            defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+            children: [
+              buildTableRow(
+                "Device connected:",
+                widget.deviceStatus.deviceConnected ? "true" : "false",
+                widget.deviceStatus.deviceConnected ? Colors.green : Colors.red,
+              ),
+              buildTableRow(
+                "Power-On-Hours:",
+                "${((widget.deviceStatus.deviceMetadata?.powerOnHours ?? -1) * 10).round() / 10.0}h",
+                Theme.of(context).colorScheme.primary,
+              ),
+            ],
+          );
+        });
   }
 
   TableRow buildTableRow(String name, String meta, Color metaColor) {

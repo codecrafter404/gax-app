@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gax_app/pages/EditPage.dart';
+import 'package:gax_app/pages/OptionsPage.dart';
 import 'package:gax_app/pages/home.dart';
 import 'package:gax_app/pages/qr-scanner.dart';
 
@@ -36,7 +37,7 @@ class AppDrawer extends StatelessWidget {
       page: QRCodeScannerPage(
         isSetup: false,
       ),
-      push: false,
+      push: true,
     ),
     Destination(
       label: "Edit configuration",
@@ -45,7 +46,14 @@ class AppDrawer extends StatelessWidget {
       page: EditPage(
         isSetup: false,
       ),
-      push: false,
+      push: true,
+    ),
+    Destination(
+      label: "Settings",
+      icon: Icon(Icons.settings),
+      selectedIcon: Icon(Icons.settings),
+      page: OptionsPage(),
+      push: true,
     ),
   ];
 
@@ -55,6 +63,7 @@ class AppDrawer extends StatelessWidget {
       selectedIndex: currentLocation,
       onDestinationSelected: (i) {
         if (i == currentLocation) return;
+        Navigator.pop(context);
         if (destinations[i].push) {
           Navigator.push(context,
               MaterialPageRoute(builder: (context) => destinations[i].page));

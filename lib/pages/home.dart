@@ -215,6 +215,9 @@ class _HomePageState extends State<HomePage> {
           bool isConnected = x == BluetoothConnectionState.connected;
           setState(() {
             deviceStatus.deviceConnected = isConnected;
+            if (!deviceStatus.deviceConnected) {
+              deviceStatus.deviceMetadata = null;
+            }
           });
         }
       },

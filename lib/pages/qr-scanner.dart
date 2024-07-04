@@ -7,6 +7,7 @@ import 'package:gax_app/pages/EditPage.dart';
 import 'package:gax_app/utils/ErrorUtils.dart';
 import 'package:gax_app/widgets/DeviceStatusWidget.dart';
 import 'package:gax_app/widgets/Drawer.dart';
+import 'package:gax_app/widgets/ErrorWidget.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 class QRCodeScannerPage extends StatelessWidget {
@@ -47,29 +48,7 @@ class QRCodeScannerPage extends StatelessWidget {
         child: MobileScanner(
           errorBuilder:
               (BuildContext context, MobileScannerException e, Widget? _) {
-            return Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(Icons.error),
-                  Text(
-                    "An error occured:",
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Text(
-                    e.toString(),
-                    textAlign: TextAlign.center,
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.copy),
-                    onPressed: () {
-                      Clipboard.setData(ClipboardData(text: e.toString()));
-                    },
-                  )
-                ],
-              ),
-            );
+            return CopyErrorWidget(e: e);
           },
           onDetect: (x) {
             if (x.barcodes.isNotEmpty) {
@@ -101,4 +80,3 @@ class QRCodeScannerPage extends StatelessWidget {
     );
   }
 }
-
