@@ -42,7 +42,9 @@ class AppDrawer extends StatelessWidget {
       label: "Edit configuration",
       icon: Icon(Icons.edit_note_rounded),
       selectedIcon: Icon(Icons.edit_note_rounded),
-      page: EditPage(),
+      page: EditPage(
+        isSetup: false,
+      ),
       push: false,
     ),
   ];
