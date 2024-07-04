@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:gax_app/widgets/DeviceLogs.dart';
 import 'package:gax_app/widgets/DeviceStatusWidget.dart';
 
 Future<BluetoothDevice> scanAndConnect(
@@ -147,8 +148,35 @@ Future<DeviceMetaData> readMetadata(int timeoutAfter, BluetoothDevice device,
   BluetoothCharacteristic metaCharacteristic =
       await getCharacteristic(device, bleServiceUuid, bleMetaCharacteristic);
   List<int> data = await metaCharacteristic.read(timeout: timeoutAfter);
+  if (data.isEmpty) {
+    throw InvalidBluetoothDeviceStateException(
+        msg: "The firmware failed to provide the metadata; see console");
+  }
   try {
     DeviceMetaData res = DeviceMetaData.fromJson(jsonDecode(utf8.decode(data)));
+    return res;
+  } catch (e) {
+    throw BluetoothParseException(msg: e.toString());
+  }
+}
+
+Future<List<DeviceLogEntry>> readLogs(int timeoutAfter, BluetoothDevice device,
+    String bleServiceUuid, String logCharacteristicUuid) async {
+  if (!device.isConnected) {
+    throw DeviceNotConnectedException();
+  }
+
+  BluetoothCharacteristic logsCharacteristic =
+      await getCharacteristic(device, bleServiceUuid, logCharacteristicUuid);
+  List<int> data = await logsCharacteristic.read(timeout: timeoutAfter);
+  if (data.isEmpty) {
+    throw InvalidBluetoothDeviceStateException(
+        msg: "The firmware failed to provide the logs; see console");
+  }
+  try {
+    Iterable i = jsonDecode(utf8.decode(data));
+    List<DeviceLogEntry> res = List<DeviceLogEntry>.from(
+        i.map((model) => DeviceLogEntry.fromJson(model)));
     return res;
   } catch (e) {
     throw BluetoothParseException(msg: e.toString());

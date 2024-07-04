@@ -4,8 +4,38 @@ class DeviceLogEntry {
   final String mac;
   final DateTime time;
   final DeviceLogEntryStatus status;
+  final int? errorCode;
 
-  DeviceLogEntry({required this.mac, required this.time, required this.status});
+  DeviceLogEntry(
+      {required this.mac,
+      required this.time,
+      required this.status,
+      required this.errorCode});
+  factory DeviceLogEntry.fromJson(Map<String, dynamic> data) {
+    final String mac = (data['mac'] as String).toUpperCase();
+    final DateTime time = DateTime.now().subtract(
+      Duration(
+        milliseconds: (data['time'] as int),
+      ),
+    );
+    late DeviceLogEntryStatus status;
+    int? errorCode;
+    if (data['status'] is Map<String, dynamic>) {
+      status = DeviceLogEntryStatus.failure;
+      errorCode = (data['status'] as Map<String, dynamic>)['Failed'] as int;
+    } else {
+      status = (data['status'] as String) == "Successful"
+          ? DeviceLogEntryStatus.success
+          : DeviceLogEntryStatus.failure;
+    }
+
+    return DeviceLogEntry(
+      errorCode: errorCode,
+      mac: mac,
+      status: status,
+      time: time,
+    );
+  }
 }
 
 enum DeviceLogEntryStatus {

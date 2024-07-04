@@ -160,11 +160,21 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> readDeviceLogs() async {
+    try {
+      deviceStatus.logEntries = await readLogs(10, bleDevice!,
+          deviceStatus.serviceUUID, deviceStatus.logsCharacteristicUUID);
+    } catch (e) {
+      throw DeviceLogReadException(msg: e.toString());
+    }
+  }
+
   Future<bool> initAsyncState() async {
     bool shouldSetup = await loadInformation();
     if (shouldSetup) return true;
     await initBLEDevice();
     await readDevicMetadata();
+    await readDeviceLogs();
     return false;
   }
 
@@ -194,6 +204,15 @@ class _HomePageState extends State<HomePage> {
             context,
             "[📲] Failed to read metadata",
             (e as MetaDataReadException).msg.toString(),
+          ),
+        );
+        break;
+      case DeviceLogReadException:
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => displayErrorMessage(
+            context,
+            "[📲] Failed to read logs",
+            (e as DeviceLogReadException).msg.toString(),
           ),
         );
         break;
@@ -390,4 +409,9 @@ class BleInitException implements Exception {
 class MetaDataReadException implements Exception {
   final String msg;
   MetaDataReadException({required this.msg});
+}
+
+class DeviceLogReadException implements Exception {
+  final String msg;
+  DeviceLogReadException({required this.msg});
 }
