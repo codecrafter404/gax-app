@@ -23,13 +23,12 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   DeviceInformation deviceStatus = DeviceInformation.fromEssentials(
-    "Loading...",
-    "Loading...",
-    "Loading...",
-    "Loading...",
-    "Loading...",
-    "Loading...",
-  );
+      "Loading...",
+      "Loading...",
+      "Loading...",
+      "Loading...",
+      "Loading...",
+      "Loading...");
   BluetoothDevice? bleDevice;
   StreamSubscription<BluetoothConnectionState>? deviceStatusChangedStream;
 
@@ -151,11 +150,21 @@ class _HomePageState extends State<HomePage> {
     return false;
   }
 
+  Future<void> readDevicMetadata() async {
+    try {
+      deviceStatus.deviceMetadata = await readMetadata(10, bleDevice!,
+          deviceStatus.serviceUUID, deviceStatus.metaCharacteristicUUID);
+    } catch (e) {
+      throw MetaDataReadException(msg: e.toString());
+    }
+  }
+
   Future<bool> initAsyncState() async {
     bool shouldSetup = await loadInformation();
     if (shouldSetup) return true;
     await initBLEDevice();
-    return shouldSetup;
+    await readDevicMetadata();
+    return false;
   }
 
   void handleAsyncInitError(BuildContext context, Object e) {
@@ -175,6 +184,15 @@ class _HomePageState extends State<HomePage> {
             context,
             "[⚙️] Failed to read configuration",
             (e as ConfigLoadException).msg.toString(),
+          ),
+        );
+        break;
+      case MetaDataReadException:
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => displayErrorMessage(
+            context,
+            "[📲] Failed to read metadata",
+            (e as MetaDataReadException).msg.toString(),
           ),
         );
         break;
@@ -353,4 +371,9 @@ class _HomePageState extends State<HomePage> {
 class BleInitException implements Exception {
   final String msg;
   BleInitException({required this.msg});
+}
+
+class MetaDataReadException implements Exception {
+  final String msg;
+  MetaDataReadException({required this.msg});
 }

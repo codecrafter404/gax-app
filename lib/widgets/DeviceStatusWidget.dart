@@ -28,9 +28,9 @@ class DeviceStatusWidget extends StatelessWidget {
         ),
         buildTableRow(
           "Power-On-Hours:",
-          "${deviceStatus.powerOnHours.toString()}h",
+          "${((deviceStatus.deviceMetadata?.powerOnHours ?? -1) * 10).round() / 10.0}h",
           Theme.of(context).colorScheme.primary,
-        )
+        ),
       ],
     );
   }
@@ -55,7 +55,7 @@ class DeviceStatusWidget extends StatelessWidget {
 class DeviceInformation {
   String deviceName;
   bool deviceConnected;
-  int powerOnHours;
+  DeviceMetaData? deviceMetadata;
   String mac;
   String serviceUUID;
   String challengeCharacteristicUUID;
@@ -66,7 +66,7 @@ class DeviceInformation {
   DeviceInformation(
       {required this.deviceName,
       required this.deviceConnected,
-      required this.powerOnHours,
+      this.deviceMetadata,
       required this.mac,
       required this.privKey,
       required this.logEntries,
@@ -85,7 +85,6 @@ class DeviceInformation {
       deviceName: name,
       mac: mac,
       privKey: privKey,
-      powerOnHours: -1,
       logEntries: [],
       serviceUUID: serviceUUID,
       challengeCharacteristicUUID: challengeCharacteristicUUID,
@@ -134,4 +133,26 @@ class DeviceInformation {
 class ConfigLoadException implements Exception {
   final String msg;
   ConfigLoadException({required this.msg});
+}
+
+class DeviceMetaData {
+  double powerOnHours;
+  int triggerPin;
+  int statusLEDPin;
+
+  DeviceMetaData(
+      {required this.powerOnHours,
+      required this.triggerPin,
+      required this.statusLEDPin});
+
+  factory DeviceMetaData.fromJson(Map<String, dynamic> data) {
+    final powerOnHours = data['power_on_hours'] as double;
+    final triggerPin = data['trigger_pin'] as int;
+    final statusLEDPin = data['status_led_pin'] as int;
+    return DeviceMetaData(
+      powerOnHours: powerOnHours,
+      triggerPin: triggerPin,
+      statusLEDPin: statusLEDPin,
+    );
+  }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -98,10 +99,8 @@ bool _compareRemoteIDToMacAddress(DeviceIdentifier remoteId, String mac) {
   return true;
 }
 
-Future<BluetoothCharacteristic> getChallengeCharacteristic(
-    BluetoothDevice device,
-    String bleServiceUuid,
-    String bleChallengeCharacteristic) async {
+Future<BluetoothCharacteristic> getCharacteristic(BluetoothDevice device,
+    String bleServiceUuid, String bleChallengeCharacteristic) async {
   BluetoothService service;
   await device.discoverServices(timeout: 10);
   try {
@@ -133,11 +132,27 @@ Future<List<int>> readChallengeBytes(int timeoutAfter, BluetoothDevice device,
     throw DeviceNotConnectedException();
   }
 
-  BluetoothCharacteristic challengeCharacteristic =
-      await getChallengeCharacteristic(
-          device, bleServiceUuid, bleChallengeCharacteristic);
+  BluetoothCharacteristic challengeCharacteristic = await getCharacteristic(
+      device, bleServiceUuid, bleChallengeCharacteristic);
   List<int> data = await challengeCharacteristic.read(timeout: timeoutAfter);
   return data;
+}
+
+Future<DeviceMetaData> readMetadata(int timeoutAfter, BluetoothDevice device,
+    String bleServiceUuid, String bleMetaCharacteristic) async {
+  if (!device.isConnected) {
+    throw DeviceNotConnectedException();
+  }
+
+  BluetoothCharacteristic metaCharacteristic =
+      await getCharacteristic(device, bleServiceUuid, bleMetaCharacteristic);
+  List<int> data = await metaCharacteristic.read(timeout: timeoutAfter);
+  try {
+    DeviceMetaData res = DeviceMetaData.fromJson(jsonDecode(utf8.decode(data)));
+    return res;
+  } catch (e) {
+    throw BluetoothParseException(msg: e.toString());
+  }
 }
 
 Future<int> writeChallengeBytes(
@@ -146,9 +161,8 @@ Future<int> writeChallengeBytes(
     List<int> data,
     String bleServiceUuid,
     String bleChallengeCharacteristic) async {
-  BluetoothCharacteristic challengeCharacteristic =
-      await getChallengeCharacteristic(
-          device, bleServiceUuid, bleChallengeCharacteristic);
+  BluetoothCharacteristic challengeCharacteristic = await getCharacteristic(
+      device, bleServiceUuid, bleChallengeCharacteristic);
   try {
     await challengeCharacteristic.write(data);
     return 0;
@@ -168,5 +182,14 @@ class InvalidBluetoothDeviceStateException implements Exception {
   @override
   String toString() {
     return "InvalidBluetoothDeviceStateException: $msg";
+  }
+}
+
+class BluetoothParseException implements Exception {
+  final String msg;
+  BluetoothParseException({required this.msg});
+  @override
+  String toString() {
+    return "BluetoothParseException: $msg";
   }
 }
