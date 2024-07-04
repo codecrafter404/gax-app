@@ -13,6 +13,38 @@ class DeviceLogEntry {
       required this.time,
       required this.status,
       required this.errorCode});
+  static List<DeviceLogEntry> fromBinary(List<int> data) {
+    List<List<int>> chunks = [];
+    for (var i = 0; i < data.length; i += 15) {
+      chunks.add(data.sublist(i, i + 15));
+    }
+    final List<DeviceLogEntry> entries = chunks.map((x) {
+      final List<int> time = x.sublist(0, 8);
+      int timesum = x[0] << (64 - (8 * 1));
+      timesum += x[1] << (64 - (8 * 2));
+      timesum += x[2] << (64 - (8 * 3));
+      timesum += x[3] << (64 - (8 * 4));
+      timesum += x[4] << (64 - (8 * 5));
+      timesum += x[5] << (64 - (8 * 6));
+      timesum += x[6] << (64 - (8 * 7));
+      timesum += x[7];
+
+      final String mac =
+          x.sublist(8, 14).map((x) => x.toRadixString(16)).join(":");
+      final int? code = x[14] == 0 ? null : x[14];
+      final DeviceLogEntryStatus status = code == null
+          ? DeviceLogEntryStatus.success
+          : DeviceLogEntryStatus.failure;
+      return DeviceLogEntry(
+        mac: mac,
+        time: DateTime.now().subtract(Duration(seconds: timesum)),
+        status: status,
+        errorCode: code,
+      );
+    }).toList();
+    return entries;
+  }
+
   factory DeviceLogEntry.fromJson(Map<String, dynamic> data) {
     final String mac = (data['mac'] as String).toUpperCase();
     final DateTime time = DateTime.now().subtract(

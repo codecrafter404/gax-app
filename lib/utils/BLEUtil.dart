@@ -174,11 +174,8 @@ Future<List<DeviceLogEntry>> readLogs(int timeoutAfter, BluetoothDevice device,
         msg: "The firmware failed to provide the logs; see console");
   }
   try {
-    String string_data = utf8.decode(data);
-    print("$string_data; ${data.length}");
-    Iterable i = jsonDecode(string_data);
-    List<DeviceLogEntry> res = List<DeviceLogEntry>.from(
-        i.map((model) => DeviceLogEntry.fromJson(model)));
+    print(data);
+    List<DeviceLogEntry> res = DeviceLogEntry.fromBinary(data);
     return res;
   } catch (e) {
     throw BluetoothParseException(msg: e.toString());
