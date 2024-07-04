@@ -25,35 +25,35 @@ class AppDrawer extends StatelessWidget {
   final List<Destination> destinations = [
     Destination(
       label: "Home",
-      icon: Icon(Icons.widgets_outlined),
-      selectedIcon: Icon(Icons.widgets),
-      page: HomePage(),
+      icon: const Icon(Icons.widgets_outlined),
+      selectedIcon: const Icon(Icons.widgets),
+      page: const HomePage(),
       push: false,
     ),
     Destination(
       label: "Scan QR-Code",
-      icon: Icon(Icons.qr_code_outlined),
-      selectedIcon: Icon(Icons.qr_code),
-      page: QRCodeScannerPage(
+      icon: const Icon(Icons.qr_code_outlined),
+      selectedIcon: const Icon(Icons.qr_code),
+      page: const QRCodeScannerPage(
         isSetup: false,
       ),
-      push: true,
+      push: false,
     ),
     Destination(
       label: "Edit configuration",
-      icon: Icon(Icons.edit_note_rounded),
-      selectedIcon: Icon(Icons.edit_note_rounded),
-      page: EditPage(
+      icon: const Icon(Icons.edit_note_rounded),
+      selectedIcon: const Icon(Icons.edit_note_rounded),
+      page: const EditPage(
         isSetup: false,
       ),
-      push: true,
+      push: false,
     ),
     Destination(
       label: "Settings",
-      icon: Icon(Icons.settings),
-      selectedIcon: Icon(Icons.settings),
-      page: OptionsPage(),
-      push: true,
+      icon: const Icon(Icons.settings),
+      selectedIcon: const Icon(Icons.settings),
+      page: const OptionsPage(),
+      push: false,
     ),
   ];
 

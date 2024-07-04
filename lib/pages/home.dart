@@ -28,6 +28,7 @@ class _HomePageState extends State<HomePage> {
       "Loading...",
       "Loading...",
       "Loading...",
+      "Loading...",
       "Loading...");
   BluetoothDevice? bleDevice;
   StreamSubscription<BluetoothConnectionState>? deviceStatusChangedStream;
@@ -233,15 +234,25 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: deviceStatus.deviceConnected
-                ? Icon(FontAwesomeIcons.linkSlash)
-                : Icon(FontAwesomeIcons.link),
+                ? const Icon(FontAwesomeIcons.linkSlash)
+                : const Icon(FontAwesomeIcons.link),
             onPressed: () async {
+              if (bleDevice != null &&
+                  !(bleDevice!.isConnected || bleDevice!.isDisconnected)) {
+                displayErrorMessage(
+                    context,
+                    "The device is currently (dis-)connecting",
+                    "WAAAIT a got deam minute!😠");
+              }
               if (deviceStatus.deviceConnected) {
                 try {
                   await bleDevice?.disconnect();
                   bleDevice = null;
                   await deviceStatusChangedStream?.cancel();
                   deviceStatusChangedStream = null;
+                  setState(() {
+                    deviceStatus.deviceConnected = false;
+                  });
                 } catch (e) {
                   if (context.mounted) {
                     displayErrorMessage(

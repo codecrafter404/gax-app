@@ -123,7 +123,7 @@ class EditPageState extends State<EditPage> {
                         if (x != null) {
                           if (deviceInfo == null) {
                             DeviceInformation.fromEssentials(
-                                "", "", "", "", x, "");
+                                "", "", "", "", x, "", "");
                           } else {
                             deviceInfo!.deviceName = x;
                           }
@@ -154,7 +154,7 @@ class EditPageState extends State<EditPage> {
                         if (x != null) {
                           if (deviceInfo == null) {
                             DeviceInformation.fromEssentials(
-                                x, "", "", "", "", "");
+                                x, "", "", "", "", "", "");
                           } else {
                             deviceInfo!.mac = x;
                           }
@@ -178,7 +178,7 @@ class EditPageState extends State<EditPage> {
                         if (x != null) {
                           if (deviceInfo == null) {
                             DeviceInformation.fromEssentials(
-                                "", "", "", x, "", "");
+                                "", "", "", x, "", "", "");
                           } else {
                             deviceInfo!.privKey = x;
                           }
@@ -220,7 +220,7 @@ class EditPageState extends State<EditPage> {
                         if (x != null) {
                           if (deviceInfo == null) {
                             DeviceInformation.fromEssentials(
-                                "", x, "", "", "", "");
+                                "", x, "", "", "", "", "");
                           } else {
                             deviceInfo!.serviceUUID = x;
                           }
@@ -251,7 +251,7 @@ class EditPageState extends State<EditPage> {
                         if (x != null) {
                           if (deviceInfo == null) {
                             DeviceInformation.fromEssentials(
-                                "", "", x, "", "", "");
+                                "", "", x, "", "", "", "");
                           } else {
                             deviceInfo!.challengeCharacteristicUUID = x;
                           }
@@ -282,9 +282,40 @@ class EditPageState extends State<EditPage> {
                         if (x != null) {
                           if (deviceInfo == null) {
                             DeviceInformation.fromEssentials(
-                                "", "", "", "", "", x);
+                                "", "", "", "", "", x, "");
                           } else {
                             deviceInfo!.metaCharacteristicUUID = x;
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 18, 24, 16),
+                    child: TextFormField(
+                      autocorrect: false,
+                      autovalidateMode: AutovalidateMode.always,
+                      initialValue: deviceInfo?.logsCharacteristicUUID,
+                      decoration: const InputDecoration(
+                        labelText: "LogsCharacteristic-UUID",
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (x) {
+                        if (x == null || x.isEmpty)
+                          return "LogsCharacteristic-UUID is required";
+                        if (!RegExp(
+                                "^[A-F\\d]{8}-[A-F\\d]{4}-[A-F\\d]{4}-[A-F\\d]{4}-[A-F\\d]{12}\$")
+                            .hasMatch(x))
+                          return "Format: XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX";
+                        return null;
+                      },
+                      onSaved: (x) {
+                        if (x != null) {
+                          if (deviceInfo == null) {
+                            DeviceInformation.fromEssentials(
+                                "", "", "", "", "", "", x);
+                          } else {
+                            deviceInfo!.logsCharacteristicUUID = x;
                           }
                         }
                       },

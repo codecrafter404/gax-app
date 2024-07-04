@@ -1,3 +1,5 @@
+// ignore_for_file: no_logic_in_create_state
+
 import 'dart:convert';
 import 'dart:io';
 
@@ -44,10 +46,13 @@ class _DeviceStatusWidgetState extends State<DeviceStatusWidget> {
     return FutureBuilder<ConfigOptions>(
         future: future,
         builder: (context, snapshot) {
-          if (snapshot.connectionState != BluetoothConnectionState.connected) {
+          if (snapshot.connectionState != ConnectionState.done) {
             return Center(
               child: CircularProgressIndicator(),
             );
+          }
+          if (snapshot.hasData) {
+            options = snapshot.data!;
           }
 
           return Table(
@@ -67,6 +72,18 @@ class _DeviceStatusWidgetState extends State<DeviceStatusWidget> {
                 "${((widget.deviceStatus.deviceMetadata?.powerOnHours ?? -1) * 10).round() / 10.0}h",
                 Theme.of(context).colorScheme.primary,
               ),
+              if (options.advancedMetadata)
+                buildTableRow(
+                  "Status GPIO-Pin:",
+                  "${widget.deviceStatus.deviceMetadata?.statusLEDPin}",
+                  Theme.of(context).colorScheme.primary,
+                ),
+              if (options.advancedMetadata)
+                buildTableRow(
+                  "Trigger GPIO-Pin:",
+                  "${widget.deviceStatus.deviceMetadata?.triggerPin}",
+                  Theme.of(context).colorScheme.primary,
+                ),
             ],
           );
         });
@@ -97,6 +114,7 @@ class DeviceInformation {
   String serviceUUID;
   String challengeCharacteristicUUID;
   String metaCharacteristicUUID;
+  String logsCharacteristicUUID;
   String privKey;
   List<DeviceLogEntry> logEntries;
 
@@ -109,24 +127,26 @@ class DeviceInformation {
       required this.logEntries,
       required this.serviceUUID,
       required this.challengeCharacteristicUUID,
-      required this.metaCharacteristicUUID});
+      required this.metaCharacteristicUUID,
+      required this.logsCharacteristicUUID});
   factory DeviceInformation.fromEssentials(
       String mac,
       String serviceUUID,
       String challengeCharacteristicUUID,
       String privKey,
       String name,
-      String metaCharacteristicUUID) {
+      String metaCharacteristicUUID,
+      String logCharacteristicUUID) {
     return DeviceInformation(
-      deviceConnected: false,
-      deviceName: name,
-      mac: mac,
-      privKey: privKey,
-      logEntries: [],
-      serviceUUID: serviceUUID,
-      challengeCharacteristicUUID: challengeCharacteristicUUID,
-      metaCharacteristicUUID: metaCharacteristicUUID,
-    );
+        deviceConnected: false,
+        deviceName: name,
+        mac: mac,
+        privKey: privKey,
+        logEntries: [],
+        serviceUUID: serviceUUID,
+        challengeCharacteristicUUID: challengeCharacteristicUUID,
+        metaCharacteristicUUID: metaCharacteristicUUID,
+        logsCharacteristicUUID: logCharacteristicUUID);
   }
   factory DeviceInformation.withEssentialsFromJson(Map<String, dynamic> data) {
     final mac = (data['mac'] as String).toUpperCase();
@@ -135,10 +155,18 @@ class DeviceInformation {
         (data['lock_char_uuid'] as String).toUpperCase();
     final metaCharacteristicUUID =
         (data['meta_char_uuid'] as String).toUpperCase();
+    final logsCharacteristicUUID =
+        (data['logs_char_uuid'] as String).toUpperCase();
     final privKey = data['priv_key'] as String;
     final name = data['ble_name'] as String;
-    return DeviceInformation.fromEssentials(mac, serviceUUID,
-        challengeCharacteristicUUID, privKey, name, metaCharacteristicUUID);
+    return DeviceInformation.fromEssentials(
+        mac,
+        serviceUUID,
+        challengeCharacteristicUUID,
+        privKey,
+        name,
+        metaCharacteristicUUID,
+        logsCharacteristicUUID);
   }
   Map<String, dynamic> toJson() {
     return {
@@ -148,6 +176,7 @@ class DeviceInformation {
       'priv_key': privKey,
       'ble_name': deviceName,
       'meta_char_uuid': metaCharacteristicUUID,
+      'logs_char_uuid': logsCharacteristicUUID,
     };
   }
 
