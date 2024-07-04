@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'pages/home.dart';
 
+final RouteObserver<ModalRoute<dynamic>> routeObserver =
+    RouteObserver<ModalRoute<dynamic>>();
+
 void main() {
   runApp(const App());
 }
@@ -27,6 +30,7 @@ class App extends StatelessWidget {
         useMaterial3: true,
       ),
       themeMode: ThemeMode.system,
+      navigatorObservers: [routeObserver],
       home: const HomePage(),
     );
   }

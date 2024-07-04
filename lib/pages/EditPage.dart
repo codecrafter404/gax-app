@@ -6,15 +6,18 @@ import 'package:gax_app/widgets/DeviceStatusWidget.dart';
 import 'package:gax_app/widgets/Drawer.dart';
 
 class EditPage extends StatefulWidget {
-  const EditPage({super.key, this.deviceInfo});
+  const EditPage({super.key, this.deviceInfo, required this.isSetup});
   final DeviceInformation? deviceInfo;
+  final bool isSetup;
 
   @override
-  State<EditPage> createState() => EditPageState(deviceInfo: deviceInfo);
+  State<EditPage> createState() =>
+      EditPageState(deviceInfo: deviceInfo, isSetup: isSetup);
 }
 
 class EditPageState extends State<EditPage> {
-  EditPageState({this.deviceInfo});
+  final bool isSetup;
+  EditPageState({this.deviceInfo, required this.isSetup});
   final _formKey = GlobalKey<FormState>();
   DeviceInformation? deviceInfo;
 
@@ -69,11 +72,13 @@ class EditPageState extends State<EditPage> {
           )
         ],
       ),
-      drawer: AppDrawer(
-        currentLocation: 2,
-      ),
+      drawer: !isSetup
+          ? AppDrawer(
+              currentLocation: 2,
+            )
+          : null,
       body: FutureBuilder<DeviceInformation?>(
-          future: future,
+          future: deviceInfo == null ? future : null,
           builder: (BuildContext context,
               AsyncSnapshot<DeviceInformation?> snapshot) {
             if (snapshot.hasError) {
@@ -89,7 +94,8 @@ class EditPageState extends State<EditPage> {
               deviceInfo = snapshot.data;
             }
 
-            if (snapshot.connectionState != ConnectionState.done) {
+            if (snapshot.connectionState != ConnectionState.done &&
+                deviceInfo == null) {
               return Center(
                 child: CircularProgressIndicator(),
               );
