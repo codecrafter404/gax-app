@@ -329,8 +329,9 @@ class _HomePageState extends State<HomePage> {
               }
             } else if (snapshot.hasError) {
               var e = snapshot.error!;
-              WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => currentAction = ConnectionAction.idle);
+              WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {
+                    currentAction = ConnectionAction.idle;
+                  }));
               handleAsyncInitError(context, e);
             }
 

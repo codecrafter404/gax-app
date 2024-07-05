@@ -4,6 +4,10 @@ the app for the [firmware](https://github.com/codecrafter404/gax).
 # What is this project about
 I've got an automatic garden gate, which can be triggered using a bulky remote. Since we're moving towards a smartphone controllable world, the gate has to follow. An "normal" Wifi-Controlled solution won't do the job, because no one has wifi around thier gate, right?😅
 
+# Demo
+[![Demo Video](http://img.youtube.com/vi/w948kQJXDfk/0.jpg)](http://www.youtube.com/watch?v=w948kQJXDfk)
+
+
 # Prerequisits
 - ESP32 (only tested with the Xtensa architecture)
 - breadboard (or sth. similar for wireing your gate and led)
