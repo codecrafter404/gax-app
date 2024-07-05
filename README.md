@@ -16,7 +16,7 @@ I've got an automatic garden gate, which can be triggered using a bulky remote. 
 
 # Setup
 - build the firmware and flash it to the firmware as described [here](https://github.com/codecrafter404/gax?tab=readme-ov-file#how-to-build)
-- Download and install the APK from the [Github Releases]()
+- Download and install the APK from the [Github Releases](https://github.com/codecrafter404/gax-app/releases/tag/v1.0.0.0%2B1)
 - Scan the QR-Code obtained while flashing the firmware -> have fun 🤗
 
 # Vison (TODO's)
