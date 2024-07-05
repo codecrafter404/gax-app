@@ -286,6 +286,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                           );
                         }
+                        setState(() {}); // update ui
                       } catch (e) {
                         if (context.mounted) {
                           setState(() {
