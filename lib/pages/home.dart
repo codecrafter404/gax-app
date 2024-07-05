@@ -210,9 +210,9 @@ class _HomePageState extends State<HomePage> {
       (x) async {
         if (context.mounted) {
           bool isConnected = x == BluetoothConnectionState.connected;
-          currentAction = ConnectionAction.idle; // doesn't need rerender
           setState(() {
             deviceStatus.deviceConnected = isConnected;
+            currentAction = ConnectionAction.idle;
           });
         }
       },
@@ -226,63 +226,73 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: Text(widget.title),
         actions: [
-          IconButton(
-            icon: deviceStatus.deviceConnected
-                ? const Icon(FontAwesomeIcons.linkSlash)
-                : const Icon(FontAwesomeIcons.link),
-            onPressed: () async {
-              if (currentAction != ConnectionAction.idle) {
-                displayErrorMessage(
-                    context,
-                    "The device is currently (dis-)connecting",
-                    "WAAAIT a got deam minute!😠");
-              }
-              if (deviceStatus.deviceConnected) {
-                currentAction = ConnectionAction.disconnecting;
-                try {
-                  await bleDevice?.disconnect();
-                  bleDevice = null;
-                  await deviceStatusChangedStream?.cancel();
-                  deviceStatusChangedStream = null;
-                  setState(() {
-                    deviceStatus.deviceConnected = false;
-                    deviceStatus.deviceMetadata = null;
-                    deviceStatus.logEntries = [];
-                  });
-                } catch (e) {
-                  currentAction = ConnectionAction.idle;
-                  if (context.mounted) {
-                    displayErrorMessage(
-                        context, "[🔗] Failed to disconnect", e.toString());
-                  } else {
-                    print(e);
-                  }
-                }
-              } else {
-                currentAction = ConnectionAction.connecting;
-                try {
-                  bool shouldSetup = await initAsyncState();
-                  if (!shouldSetup) {
-                    setupStateChangeStream(context);
-                  } else {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const QRCodeScannerPage(
-                          isSetup: true,
-                        ),
-                      ),
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    currentAction = ConnectionAction.idle;
-                    handleAsyncInitError(context, e);
-                  }
-                }
-              }
-            },
-          )
+          currentAction == ConnectionAction.idle
+              ? IconButton(
+                  icon: deviceStatus.deviceConnected
+                      ? const Icon(FontAwesomeIcons.linkSlash)
+                      : const Icon(FontAwesomeIcons.link),
+                  onPressed: () async {
+                    if (currentAction != ConnectionAction.idle) {
+                      displayErrorMessage(
+                          context,
+                          "[⏳] The device is currently (dis-)connecting",
+                          "WAAAIT a got deam minute!😠");
+                    }
+                    if (deviceStatus.deviceConnected) {
+                      setState(() {
+                        currentAction = ConnectionAction.disconnecting;
+                      });
+                      try {
+                        await bleDevice?.disconnect();
+                        bleDevice = null;
+                        await deviceStatusChangedStream?.cancel();
+                        deviceStatusChangedStream = null;
+                        setState(() {
+                          deviceStatus.deviceConnected = false;
+                          deviceStatus.deviceMetadata = null;
+                          deviceStatus.logEntries = [];
+                        });
+                      } catch (e) {
+                        setState(() {
+                          currentAction = ConnectionAction.idle;
+                        });
+                        if (context.mounted) {
+                          displayErrorMessage(context,
+                              "[🔗] Failed to disconnect", e.toString());
+                        } else {
+                          print(e);
+                        }
+                      }
+                    } else {
+                      setState(() {
+                        currentAction = ConnectionAction.connecting;
+                      });
+                      try {
+                        bool shouldSetup = await initAsyncState();
+                        if (!shouldSetup) {
+                          setupStateChangeStream(context);
+                        } else {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const QRCodeScannerPage(
+                                isSetup: true,
+                              ),
+                            ),
+                          );
+                        }
+                      } catch (e) {
+                        if (context.mounted) {
+                          setState(() {
+                            currentAction = ConnectionAction.idle;
+                          });
+                          handleAsyncInitError(context, e);
+                        }
+                      }
+                    }
+                  },
+                )
+              : CircularProgressIndicator()
         ],
       ),
       drawer: AppDrawer(
@@ -295,29 +305,33 @@ class _HomePageState extends State<HomePage> {
               if (snapshot.data!) {
                 // Intro
                 WidgetsBinding.instance.addPostFrameCallback(
-                  // after the page has been rendered!
-                  (_) => Navigator.pushReplacement(
+                    // after the page has been rendered!
+                    (_) {
+                  Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const QRCodeScannerPage(
                         isSetup: true,
                       ),
                     ),
-                  ),
-                );
-                currentAction = ConnectionAction.idle;
+                  );
+
+                  currentAction = ConnectionAction.idle;
+                });
               } else {
                 setupStateChangeStream(context);
               }
             } else if (snapshot.hasError) {
               var e = snapshot.error!;
-              currentAction = ConnectionAction.idle;
+              WidgetsBinding.instance.addPostFrameCallback(
+                  (_) => currentAction = ConnectionAction.idle);
               handleAsyncInitError(context, e);
             }
 
             return RefreshIndicator(
               onRefresh: () async {
-                if (snapshot.connectionState != ConnectionState.done) {
+                if (snapshot.connectionState != ConnectionState.done ||
+                    currentAction != ConnectionAction.idle) {
                   displayErrorMessage(context, "[⏳] Currently loading",
                       "The app has not jet finished loading");
                   return;
