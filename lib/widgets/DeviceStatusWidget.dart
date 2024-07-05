@@ -148,6 +148,16 @@ class DeviceInformation {
         metaCharacteristicUUID: metaCharacteristicUUID,
         logsCharacteristicUUID: logCharacteristicUUID);
   }
+  bool isEqualInformation(DeviceInformation other) {
+    return deviceName == other.deviceName && // the rest is state information
+        mac == other.mac &&
+        serviceUUID == other.serviceUUID &&
+        challengeCharacteristicUUID == other.challengeCharacteristicUUID &&
+        metaCharacteristicUUID == other.metaCharacteristicUUID &&
+        logsCharacteristicUUID == other.logsCharacteristicUUID &&
+        privKey == other.privKey;
+  }
+
   factory DeviceInformation.withEssentialsFromJson(Map<String, dynamic> data) {
     final mac = (data['mac'] as String).toUpperCase();
     final serviceUUID = (data['service_uuid'] as String).toUpperCase();

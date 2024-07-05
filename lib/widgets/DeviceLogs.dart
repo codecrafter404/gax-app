@@ -13,7 +13,7 @@ class DeviceLogEntry {
       required this.time,
       required this.status,
       required this.errorCode});
-  static List<DeviceLogEntry> fromBinary(List<int> data) {
+  static List<DeviceLogEntry> fromBinary(List<int> data, DateTime receiveTime) {
     List<List<int>> chunks = [];
     for (var i = 0; i < data.length; i += 15) {
       chunks.add(data.sublist(i, i + 15));
@@ -37,7 +37,7 @@ class DeviceLogEntry {
           : DeviceLogEntryStatus.failure;
       return DeviceLogEntry(
         mac: mac,
-        time: DateTime.now().subtract(Duration(seconds: timesum)),
+        time: receiveTime.subtract(Duration(seconds: timesum)),
         status: status,
         errorCode: code,
       );

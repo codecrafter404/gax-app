@@ -113,7 +113,9 @@ class _HomePageState extends State<HomePage> {
     try {
       var res = await DeviceInformation.load();
       if (res != null) {
-        deviceStatus = res;
+        if (!deviceStatus.isEqualInformation(res)) {
+          deviceStatus = res;
+        }
       } else {
         return true;
       }
@@ -201,16 +203,16 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  ConnectionAction currentAction = ConnectionAction.connecting;
+
   void setupStateChangeStream(BuildContext context) {
     deviceStatusChangedStream ??= bleDevice?.connectionState.listen(
       (x) async {
         if (context.mounted) {
           bool isConnected = x == BluetoothConnectionState.connected;
+          currentAction = ConnectionAction.idle; // doesn't need rerender
           setState(() {
             deviceStatus.deviceConnected = isConnected;
-            if (!deviceStatus.deviceConnected) {
-              deviceStatus.deviceMetadata = null;
-            }
           });
         }
       },
@@ -229,14 +231,14 @@ class _HomePageState extends State<HomePage> {
                 ? const Icon(FontAwesomeIcons.linkSlash)
                 : const Icon(FontAwesomeIcons.link),
             onPressed: () async {
-              if (bleDevice != null &&
-                  !(bleDevice!.isConnected || bleDevice!.isDisconnected)) {
+              if (currentAction != ConnectionAction.idle) {
                 displayErrorMessage(
                     context,
                     "The device is currently (dis-)connecting",
                     "WAAAIT a got deam minute!😠");
               }
               if (deviceStatus.deviceConnected) {
+                currentAction = ConnectionAction.disconnecting;
                 try {
                   await bleDevice?.disconnect();
                   bleDevice = null;
@@ -244,8 +246,11 @@ class _HomePageState extends State<HomePage> {
                   deviceStatusChangedStream = null;
                   setState(() {
                     deviceStatus.deviceConnected = false;
+                    deviceStatus.deviceMetadata = null;
+                    deviceStatus.logEntries = [];
                   });
                 } catch (e) {
+                  currentAction = ConnectionAction.idle;
                   if (context.mounted) {
                     displayErrorMessage(
                         context, "[🔗] Failed to disconnect", e.toString());
@@ -254,6 +259,7 @@ class _HomePageState extends State<HomePage> {
                   }
                 }
               } else {
+                currentAction = ConnectionAction.connecting;
                 try {
                   bool shouldSetup = await initAsyncState();
                   if (!shouldSetup) {
@@ -270,6 +276,7 @@ class _HomePageState extends State<HomePage> {
                   }
                 } catch (e) {
                   if (context.mounted) {
+                    currentAction = ConnectionAction.idle;
                     handleAsyncInitError(context, e);
                   }
                 }
@@ -298,11 +305,13 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 );
+                currentAction = ConnectionAction.idle;
               } else {
                 setupStateChangeStream(context);
               }
             } else if (snapshot.hasError) {
               var e = snapshot.error!;
+              currentAction = ConnectionAction.idle;
               handleAsyncInitError(context, e);
             }
 
@@ -318,6 +327,7 @@ class _HomePageState extends State<HomePage> {
                   if (!shouldSetup) {
                     setupStateChangeStream(context);
                   }
+                  setState(() {}); // update ui
                 } catch (e) {
                   if (context.mounted) {
                     handleAsyncInitError(context, e);
@@ -421,3 +431,5 @@ String getMessageToErrorCode(int code) {
   }
   return res;
 }
+
+enum ConnectionAction { connecting, disconnecting, idle }

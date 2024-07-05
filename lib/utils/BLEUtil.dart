@@ -169,13 +169,8 @@ Future<List<DeviceLogEntry>> readLogs(int timeoutAfter, BluetoothDevice device,
   BluetoothCharacteristic logsCharacteristic =
       await getCharacteristic(device, bleServiceUuid, logCharacteristicUuid);
   List<int> data = await logsCharacteristic.read(timeout: timeoutAfter);
-  if (data.isEmpty) {
-    throw InvalidBluetoothDeviceStateException(
-        msg: "The firmware failed to provide the logs; see console");
-  }
   try {
-    print(data);
-    List<DeviceLogEntry> res = DeviceLogEntry.fromBinary(data);
+    List<DeviceLogEntry> res = DeviceLogEntry.fromBinary(data, DateTime.now());
     return res;
   } catch (e) {
     throw BluetoothParseException(msg: e.toString());
