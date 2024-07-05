@@ -21,7 +21,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   DeviceInformation deviceStatus = DeviceInformation.fromEssentials(
       "Loading...",
       "Loading...",
@@ -46,11 +46,43 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> startConnection(BuildContext context) async {
+    setState(() {
+      currentAction = ConnectionAction.connecting;
+    });
+    try {
+      bool shouldSetup = await initAsyncState();
+      if (!shouldSetup) {
+        setupStateChangeStream(context);
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const QRCodeScannerPage(
+              isSetup: true,
+            ),
+          ),
+        );
+      }
+      setState(() {}); // update ui
+    } catch (e) {
+      if (context.mounted) {
+        setState(() {
+          currentAction = ConnectionAction.idle;
+        });
+        handleAsyncInitError(context, e);
+      }
+    }
+  }
+
   Future<void> openGate(BuildContext context) async {
     String resultMsg = "Empty result message";
     bool successful = false;
     try {
-      await initBLEDevice();
+      if (!deviceStatus.deviceConnected) {
+        await startConnection(context);
+      }
+
       // local auth
       LocalAuthentication auth = LocalAuthentication();
       if (await auth.isDeviceSupported()) {
@@ -95,17 +127,38 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
+    WidgetsBinding.instance.addObserver(this);
     future = initAsyncState();
     super.initState();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     deviceStatusChangedStream?.cancel();
     if (bleDevice != null) {
       // bleDevice!.disconnect();
     }
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.detached:
+      case AppLifecycleState.hidden:
+      case AppLifecycleState.resumed:
+      case AppLifecycleState.inactive:
+        return;
+      case AppLifecycleState.paused:
+        unawaited(bleDevice?.disconnect());
+        setState(() {
+          deviceStatus.deviceConnected = false;
+          deviceStatus.deviceMetadata = null;
+          deviceStatus.logEntries = [];
+        });
+        return;
+    }
   }
 
   //Returns a bool indecating if the you should navigate to the setup screen or not
@@ -217,7 +270,7 @@ class _HomePageState extends State<HomePage> {
               deviceStatus.deviceConnected = false;
               deviceStatus.deviceMetadata = null;
               deviceStatus.logEntries = [];
-            }
+            } else {}
           });
         }
       },
@@ -269,32 +322,7 @@ class _HomePageState extends State<HomePage> {
                         }
                       }
                     } else {
-                      setState(() {
-                        currentAction = ConnectionAction.connecting;
-                      });
-                      try {
-                        bool shouldSetup = await initAsyncState();
-                        if (!shouldSetup) {
-                          setupStateChangeStream(context);
-                        } else {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const QRCodeScannerPage(
-                                isSetup: true,
-                              ),
-                            ),
-                          );
-                        }
-                        setState(() {}); // update ui
-                      } catch (e) {
-                        if (context.mounted) {
-                          setState(() {
-                            currentAction = ConnectionAction.idle;
-                          });
-                          handleAsyncInitError(context, e);
-                        }
-                      }
+                      await startConnection(context);
                     }
                   },
                 )
