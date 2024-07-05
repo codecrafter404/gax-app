@@ -213,6 +213,11 @@ class _HomePageState extends State<HomePage> {
           setState(() {
             deviceStatus.deviceConnected = isConnected;
             currentAction = ConnectionAction.idle;
+            if (!isConnected) {
+              deviceStatus.deviceConnected = false;
+              deviceStatus.deviceMetadata = null;
+              deviceStatus.logEntries = [];
+            }
           });
         }
       },
